@@ -18,7 +18,9 @@ import { ConsoleBuffer } from '../lib/console-buffer.js';
 import { NetworkBuffer } from '../lib/network-buffer.js';
 import {
   clearSession,
+  readCursorVisible,
   readSession,
+  writeCursorVisible,
   writeSession,
   type StoredSession,
 } from '../lib/storage.js';
@@ -42,11 +44,13 @@ let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let reconnectAttempt = 0;
 let lastSocketMessage = 0;
+let cursorVisible = true;
 let state: PopupState = {
   status: 'idle',
   tab: null,
   error: null,
   canDisconnect: false,
+  cursorVisible: true,
 };
 
 function tabInfoFromSession(session: StoredSession): TabInfo {
@@ -128,11 +132,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
 function ensureInitialized(): Promise<void> {
   if (!initializing) {
     initializing = (async () => {
-      const saved = await readSession();
+      const [saved, cursor] = await Promise.all([readSession(), readCursorVisible()]);
+      cursorVisible = cursor;
       desiredSession = saved;
       state = {
         ...state,
         tab: saved ? tabInfoFromSession(saved) : null,
+        cursorVisible: cursor,
       };
       if (saved) {
         setTimeout(() => {
@@ -304,6 +310,7 @@ async function ensureCdp(info: TabInfo): Promise<void> {
       void handleDetach(message, code);
     },
   });
+  cdp.setCursorVisible(cursorVisible);
 }
 
 async function resolveTab(tabId?: number): Promise<chrome.tabs.Tab> {
@@ -671,7 +678,13 @@ async function handleToolCall(call: ToolCall): Promise<void> {
 function isPopupCommand(message: unknown): message is PopupCommand {
   if (!message || typeof message !== 'object') return false;
   const type = (message as { type?: unknown }).type;
-  return type === 'get_state' || type === 'connect' || type === 'disconnect' || type === 'retry';
+  return (
+    type === 'get_state' ||
+    type === 'connect' ||
+    type === 'disconnect' ||
+    type === 'retry' ||
+    type === 'set_cursor'
+  );
 }
 
 async function syncDesiredTab(): Promise<void> {
@@ -708,6 +721,12 @@ async function handleCommand(command: PopupCommand): Promise<{ ok: boolean; mess
     case 'disconnect':
       await disconnect();
       return { ok: true };
+    case 'set_cursor':
+      cursorVisible = command.visible === true;
+      await writeCursorVisible(cursorVisible);
+      state = { ...state, cursorVisible };
+      cdp?.setCursorVisible(cursorVisible);
+      return { ok: true, state };
     default:
       return { ok: false, message: 'Unknown command.' };
   }

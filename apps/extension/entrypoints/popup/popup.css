@@ -170,6 +170,100 @@ body {
   color: var(--color-text-muted);
 }
 
+.settings {
+  margin-top: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  cursor: pointer;
+}
+
+.setting-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.setting-title {
+  font-size: var(--text-xs-size);
+  font-weight: 600;
+  line-height: var(--text-xs-line);
+}
+
+.setting-hint {
+  font-size: var(--text-xs-size);
+  line-height: var(--text-xs-line);
+  color: var(--color-text-muted);
+}
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 34px;
+  height: 20px;
+}
+
+.switch-input {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch-track {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-border-input);
+  transition: background var(--motion-fast) var(--motion-ease);
+}
+
+.switch-thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  margin: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  transition: transform var(--motion-base) var(--motion-ease), background var(--motion-fast) var(--motion-ease);
+}
+
+.switch-input:checked + .switch-track {
+  background: var(--color-accent);
+}
+
+.switch-input:checked + .switch-track .switch-thumb {
+  transform: translateX(14px);
+  background: var(--color-on-accent);
+}
+
+.switch-input:focus-visible + .switch-track {
+  outline: var(--focus-ring) solid var(--color-focus);
+  outline-offset: var(--focus-ring);
+}
+
+.switch-input:disabled {
+  cursor: default;
+}
+
+.switch-input:disabled + .switch-track {
+  opacity: 0.4;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -281,10 +375,21 @@ body {
 
 @media (forced-colors: active) {
   .button:focus-visible,
-  .icon-button:focus-visible {
+  .icon-button:focus-visible,
+  .switch-input:focus-visible + .switch-track {
     outline-color: Highlight;
   }
   .button-primary {
     border: 1px solid ButtonText;
+  }
+  .switch-track {
+    border: 1px solid ButtonText;
+    background: ButtonFace;
+  }
+  .switch-input:checked + .switch-track {
+    background: Highlight;
+  }
+  .switch-input:checked + .switch-track .switch-thumb {
+    background: HighlightText;
   }
 }

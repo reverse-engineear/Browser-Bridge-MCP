@@ -8,6 +8,7 @@ export interface StoredSession {
 }
 
 const SESSION_KEY = 'bridgeSession';
+const CURSOR_KEY = 'agentCursorVisible';
 
 export async function readSession(): Promise<StoredSession | null> {
   const stored = await chrome.storage.session.get(SESSION_KEY);
@@ -36,6 +37,15 @@ export async function writeSession(tab: TabInfo): Promise<void> {
 
 export async function clearSession(): Promise<void> {
   await chrome.storage.session.remove(SESSION_KEY);
+}
+
+export async function readCursorVisible(): Promise<boolean> {
+  const stored = await chrome.storage.local.get(CURSOR_KEY);
+  return stored[CURSOR_KEY] !== false;
+}
+
+export async function writeCursorVisible(visible: boolean): Promise<void> {
+  await chrome.storage.local.set({ [CURSOR_KEY]: visible });
 }
 
 export async function readTabInfo(tabId: number): Promise<TabInfo | null> {

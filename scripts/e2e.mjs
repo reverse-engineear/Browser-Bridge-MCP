@@ -663,8 +663,77 @@ async function run() {
   check(!result.isError, 'click succeeds');
   checkMatch(result.text, /Clicked/, 'click reports success');
 
+  step('Checking the agent cursor and its hide switch');
+  const cursorAfterClick = await pageCursorState(popupSession, indexUrl);
+  check(
+    cursorAfterClick === 'active',
+    `the click shows the internal cursor (got ${JSON.stringify(cursorAfterClick)})`,
+  );
+  line('[e2e] the agent cursor is active after a click');
+
+  result = await state.mcp.tool('screenshot');
+  check(!result.isError && Boolean(result.image?.data), 'the agent cursor is captured in a screenshot');
+  await writeFile(path.join(SCREENS, 'agent-cursor.png'), Buffer.from(result.image.data, 'base64'));
+  line('[e2e] saved replica/clone-screens/agent-cursor.png');
+
+  await state.cdp.evaluate('document.getElementById("cursor-toggle").click()', popupSession);
+  await poll(
+    async () => {
+      const value = await pageCursorState(popupSession, indexUrl);
+      if (value && typeof value === 'object' && value.error) {
+        throw new Error(`page cursor check failed: ${value.error}`);
+      }
+      return value === null ? 'removed' : null;
+    },
+    'the cursor switch to remove the page overlay',
+    8_000,
+  );
+  const storedOff = await state.cdp.evaluate(
+    'new Promise((resolve) => chrome.storage.local.get("agentCursorVisible", (value) => resolve(value.agentCursorVisible)))',
+    popupSession,
+    true,
+  );
+  check(storedOff === false, 'the cursor preference is persisted when switched off');
+
+  result = await state.mcp.tool('click', { ref: helloRef });
+  check(!result.isError, 'clicking still works with the agent cursor off');
+  const cursorOff = await pageCursorState(popupSession, indexUrl);
+  check(cursorOff === null, 'a click with the cursor off leaves the page without an overlay');
+  line('[e2e] cursor off: actions still work and the overlay stays removed');
+
+  await state.cdp.evaluate('document.getElementById("cursor-toggle").click()', popupSession);
+  await poll(
+    async () =>
+      (await state.cdp.evaluate('document.getElementById("cursor-toggle").checked', popupSession)) === true
+        ? 'on'
+        : null,
+    'the cursor switch to turn back on',
+    8_000,
+  );
+  const storedOn = await state.cdp.evaluate(
+    'new Promise((resolve) => chrome.storage.local.get("agentCursorVisible", (value) => resolve(value.agentCursorVisible)))',
+    popupSession,
+    true,
+  );
+  check(storedOn === true, 'the cursor preference is persisted when switched on');
+
+  result = await state.mcp.tool('click', { ref: helloRef });
+  check(!result.isError, 'clicking works after the agent cursor is switched back on');
+  const cursorBack = await pageCursorState(popupSession, indexUrl);
+  check(cursorBack === 'active', 'the overlay returns after the cursor is switched back on');
+
+  const autoHidden = await poll(
+    async () => ((await pageCursorState(popupSession, indexUrl)) === 'idle' ? 'idle' : null),
+    'the agent cursor to fade out after inactivity',
+    8_000,
+  );
+  check(autoHidden === 'idle', 'the agent cursor fades out on its own');
+  line('[e2e] cursor on: overlay returned, persisted and auto-hid');
+
   result = await state.mcp.tool('type', { ref: nameRef, text: 'Ada', submit: true });
   check(!result.isError, 'type with submit succeeds');
+  const cursorAfterType = await pageCursorState(popupSession, indexUrl);
+  check(cursorAfterType === 'active', 'typing brings the agent cursor back');
 
   result = await state.mcp.tool('select_option', { ref: colourRef, values: ['green'] });
   check(!result.isError, 'select_option succeeds');
@@ -703,8 +772,10 @@ async function run() {
   check(!result.isError, 'drag succeeds');
   result = await state.mcp.tool('snapshot');
   checkMatch(result.text, /Dropped: payload/, 'the drop target received the payload');
+  const cursorAfterDrag = await pageCursorState(popupSession, indexUrl);
+  check(cursorAfterDrag === 'active', 'dragging keeps the agent cursor at the drop point');
   const shadowRef = refFor(result.text, 'button', 'Shadow action');
-  line('[e2e] drag completed');
+  line('[e2e] drag completed with the cursor at the drop point');
 
   result = await state.mcp.tool('click', { ref: shadowRef });
   check(!result.isError, 'clicking inside shadow DOM succeeds');
@@ -863,7 +934,7 @@ async function run() {
 
   if (state.mcp) await state.mcp.release();
   state.mcp = null;
-  line('\n[e2e] PASS: first run, shared bridge, reconnect, tab-close and all MCP tools verified');
+  line('\n[e2e] PASS: first run, shared bridge, reconnect, tab-close, agent cursor and all MCP tools verified');
 }
 
 function popupView(sessionId) {
@@ -877,6 +948,31 @@ function popupView(sessionId) {
       return found ?? 'loading';
     })()`,
     sessionId,
+  );
+}
+
+function pageCursorState(sessionId, url) {
+  return state.cdp.evaluate(
+    `new Promise((resolve) => {
+      chrome.tabs.query({}, (tabs) => {
+        const tab = tabs.find((item) => item.url === ${JSON.stringify(url)});
+        if (!tab || tab.id === undefined) { resolve({ error: 'tab not found' }); return; }
+        chrome.debugger.sendCommand(
+          { tabId: tab.id },
+          'Runtime.evaluate',
+          {
+            expression: '(() => { const host = document.querySelector("[data-browser-bridge-cursor]"); return host ? host.getAttribute("data-browser-bridge-cursor") : null; })()',
+            returnByValue: true,
+          },
+          (result) => {
+            if (chrome.runtime.lastError) { resolve({ error: chrome.runtime.lastError.message }); return; }
+            resolve(result && result.result ? result.result.value : null);
+          },
+        );
+      });
+    })`,
+    sessionId,
+    true,
   );
 }
 

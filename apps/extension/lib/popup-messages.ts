@@ -7,13 +7,15 @@ export interface PopupState {
   tab: TabInfo | null;
   error: { code: ErrorCode; message: string } | null;
   canDisconnect: boolean;
+  cursorVisible: boolean;
 }
 
 export type PopupCommand =
   | { type: 'get_state' }
   | { type: 'connect'; tabId?: number }
   | { type: 'disconnect' }
-  | { type: 'retry'; tabId?: number };
+  | { type: 'retry'; tabId?: number }
+  | { type: 'set_cursor'; visible: boolean };
 
 export interface StateMessage {
   type: 'state';

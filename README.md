@@ -100,6 +100,7 @@ You do not run a Node command every time. Register the server once; your MCP cli
 - Choose **Disconnect** to end the browser session.
 - The assistant can only act on that connected tab.
 - Refs expire on navigation. Ask for a fresh `snapshot` after a page changes.
+- Clicks, typing, hovers and drags show a smooth internal cursor on the page. It fades after a couple of seconds of inactivity. Switch **Agent cursor** off in the popup to hide it; the choice is remembered.
 
 ### Shared bridge lifecycle
 
@@ -190,6 +191,7 @@ Then open `chrome://extensions`, click **Reload** on Browser Bridge, reconnect t
 - One extension session is allowed at a time; a second gets `SESSION_BUSY`.
 - There is **no password or pairing code**. Any local program that can reach the port can act as an MCP client, and any extension in this Chrome profile can claim the session. Run only trusted local software.
 - The assistant acts in your real browser profile with your logged-in sessions. Every action is visible in the browser.
+- The cursor overlay is injected only into the connected tab. It is pointer-transparent, never receives input, contains no page data, and is removed when you switch it off or disconnect.
 - Page content, screenshots, console output, and network metadata are processed in memory by the bridge. Your MCP client may send tool results to its model provider; that transfer is between you and the client.
 - Network results include full request URLs but never headers, cookies, or bodies. A URL can still carry a token in its query string, so review the output before sharing it.
 - Clearing the extension's storage removes its saved tab state.

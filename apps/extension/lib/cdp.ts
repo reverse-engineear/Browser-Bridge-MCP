@@ -18,6 +18,7 @@ import type {
 } from './network-buffer.js';
 import { parseKeyChord, type KeyStroke } from './keys.js';
 import { buildSnapshot, type AxNode, type SnapshotResult } from './snapshot.js';
+import { cursorExpression, type CursorKind } from './agent-cursor.js';
 
 interface CdpSessionHandlers {
   onPageCommit: (tab: TabInfo) => void;
@@ -43,6 +44,10 @@ interface LoadWaiter {
   resolve: () => void;
   reject: (error: AutomationError) => void;
   timer: ReturnType<typeof setTimeout>;
+}
+
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function mapAttachError(message: string): AutomationError {
@@ -126,6 +131,9 @@ export class CdpSession {
   private pageUrl = '';
   private pageTitle = '';
   private disposed = false;
+  private cursorVisible = true;
+  private cursorBroken = false;
+  private cursorInstalled = false;
 
   private constructor(
     tabId: number,
@@ -201,6 +209,15 @@ export class CdpSession {
   async dispose(): Promise<void> {
     if (this.disposed) return;
     this.disposed = true;
+    if (this.cursorInstalled && !this.cursorBroken) {
+      await Promise.race([
+        this.send('Runtime.evaluate', {
+          expression: cursorExpression('remove'),
+          returnByValue: true,
+        }).catch(() => undefined),
+        new Promise<void>((resolve) => setTimeout(resolve, 250)),
+      ]);
+    }
     chrome.debugger.onEvent.removeListener(this.eventListener);
     chrome.debugger.onDetach.removeListener(this.detachListener);
     for (const waiter of this.loadWaiters) {
@@ -241,6 +258,8 @@ export class CdpSession {
         if (frame?.parentId) return;
         this.snapshotId += 1;
         this.pageUrl = frame?.url ?? this.pageUrl;
+        this.cursorInstalled = false;
+        this.cursorBroken = false;
         void this.refreshTabInfo();
         return;
       }
@@ -564,16 +583,65 @@ export class CdpSession {
     return this.centerOf(quad);
   }
 
+  setCursorVisible(visible: boolean): void {
+    if (this.cursorVisible === visible) return;
+    this.cursorVisible = visible;
+    if (!visible) {
+      if (this.cursorInstalled && !this.cursorBroken) {
+        void this.send('Runtime.evaluate', {
+          expression: cursorExpression('remove'),
+          returnByValue: true,
+        }).catch(() => undefined);
+        this.cursorInstalled = false;
+      }
+    }
+  }
+
+  private async runCursor(
+    command: 'move' | 'pulse' | 'hide' | 'remove',
+    payload: { x?: number; y?: number; kind?: CursorKind; duration?: number } = {},
+  ): Promise<void> {
+    if (this.cursorBroken || this.disposed) return;
+    try {
+      const response = await this.send<{ exceptionDetails?: unknown }>('Runtime.evaluate', {
+        expression: cursorExpression(command, payload),
+        returnByValue: true,
+        awaitPromise: true,
+      });
+      if (response.exceptionDetails) {
+        this.cursorBroken = true;
+        return;
+      }
+      if (command === 'move' || command === 'pulse') this.cursorInstalled = true;
+    } catch {
+      this.cursorBroken = true;
+    }
+  }
+
+  private async cursorTo(x: number, y: number, kind: CursorKind, duration?: number): Promise<void> {
+    if (!this.cursorVisible) return;
+    await this.runCursor('move', { x, y, kind, ...(duration !== undefined ? { duration } : {}) });
+  }
+
+  private async cursorPulse(x: number, y: number, kind: CursorKind): Promise<void> {
+    if (!this.cursorVisible) return;
+    await this.runCursor('pulse', { x, y, kind });
+  }
+
   async click(ref: unknown): Promise<void> {
     const { x, y } = await this.pointFor(ref);
+    await this.cursorTo(x, y, 'pointer');
     await this.dispatchMouse('mouseMoved', x, y, 'none', 0);
     await this.dispatchMouse('mousePressed', x, y, 'left', 1, 1);
     await this.dispatchMouse('mouseReleased', x, y, 'left', 0, 1);
+    await this.cursorPulse(x, y, 'click');
   }
 
   async hover(ref: unknown): Promise<void> {
     const { x, y } = await this.pointFor(ref);
+    await this.cursorTo(x, y, 'pointer');
     await this.dispatchMouse('mouseMoved', x, y, 'none', 0);
+    await this.cursorPulse(x, y, 'hover');
   }
 
   private async dispatchKeyStroke(stroke: KeyStroke): Promise<void> {
@@ -598,13 +666,29 @@ export class CdpSession {
 
   async type(ref: unknown, text: string, submit: boolean): Promise<void> {
     const backendNodeId = this.backendNodeFor(ref);
+    let focused = false;
     try {
       await this.send('DOM.focus', { backendNodeId });
+      focused = true;
     } catch {
-      const point = await this.pointFor(ref);
+      focused = false;
+    }
+
+    let point: { x: number; y: number } | null = null;
+    try {
+      point = await this.pointFor(ref);
+    } catch {
+      point = null;
+    }
+
+    if (!focused) {
+      if (!point) point = await this.pointFor(ref);
+      await this.cursorTo(point.x, point.y, 'text');
       await this.dispatchMouse('mouseMoved', point.x, point.y, 'none', 0);
       await this.dispatchMouse('mousePressed', point.x, point.y, 'left', 1, 1);
       await this.dispatchMouse('mouseReleased', point.x, point.y, 'left', 0, 1);
+    } else if (point) {
+      await this.cursorTo(point.x, point.y, 'text');
     }
 
     const selectAll = /Mac/i.test(navigator.userAgent) ? 'Meta+A' : 'Control+A';
@@ -619,6 +703,8 @@ export class CdpSession {
     if (submit) {
       await this.dispatchKeyStroke(parseKeyChord('Enter'));
     }
+
+    if (point) await this.cursorPulse(point.x, point.y, 'type');
   }
 
   async pressKey(key: string): Promise<void> {
@@ -627,6 +713,14 @@ export class CdpSession {
 
   async selectOption(ref: unknown, values: string[]): Promise<string[]> {
     const backendNodeId = this.backendNodeFor(ref);
+    let point: { x: number; y: number } | null = null;
+    try {
+      point = await this.pointFor(ref);
+    } catch {
+      point = null;
+    }
+    if (point) await this.cursorTo(point.x, point.y, 'pointer');
+
     let objectId: string | undefined;
     try {
       const resolved = await this.send<{ object?: { objectId?: string } }>('DOM.resolveNode', {
@@ -680,6 +774,7 @@ export class CdpSession {
       void chrome.runtime.lastError;
     });
 
+    if (point) await this.cursorPulse(point.x, point.y, 'click');
     return outcome.values ?? [];
   }
 
@@ -687,14 +782,19 @@ export class CdpSession {
     const from = await this.pointFor(fromRef);
     const to = await this.pointFor(toRef);
 
+    await this.cursorTo(from.x, from.y, 'grab');
     await this.dispatchMouse('mouseMoved', from.x, from.y, 'none', 0);
     await this.dispatchMouse('mousePressed', from.x, from.y, 'left', 1, 1);
+    const travel = this.cursorTo(to.x, to.y, 'grab', 460);
     for (let step = 1; step <= 6; step += 1) {
       const x = from.x + ((to.x - from.x) * step) / 6;
       const y = from.y + ((to.y - from.y) * step) / 6;
       await this.dispatchMouse('mouseMoved', x, y, 'left', 1);
+      await pause(50);
     }
+    await travel;
     await this.dispatchMouse('mouseReleased', to.x, to.y, 'left', 0, 1);
+    await this.cursorPulse(to.x, to.y, 'drop');
   }
 
   async screenshot(): Promise<{ base64: string; mimeType: 'image/png'; width: number; height: number; bytes: number }> {

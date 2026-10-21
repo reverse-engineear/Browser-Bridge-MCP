@@ -35,9 +35,13 @@ const errorView = byId<HTMLElement>('error-view');
 const retryButton = byId<HTMLButtonElement>('retry');
 const disconnectError = byId<HTMLButtonElement>('disconnect-error');
 
+const settingsRow = byId<HTMLElement>('settings-row');
+const cursorToggle = byId<HTMLInputElement>('cursor-toggle');
+
 let currentState: PopupState | null = null;
 let lastView = '';
 let commandActive = false;
+let cursorBusy = false;
 
 function setHidden(element: HTMLElement, hidden: boolean): void {
   element.hidden = hidden;
@@ -133,6 +137,10 @@ function render(state: PopupState): void {
     }
   }
 
+  settingsRow.hidden = false;
+  cursorToggle.checked = state.cursorVisible !== false;
+  cursorToggle.disabled = commandActive || cursorBusy;
+
   disconnectError.hidden = !state.canDisconnect;
   retryReconnect.disabled = commandActive;
   stopReconnect.disabled = commandActive;
@@ -210,6 +218,29 @@ stopReconnect.addEventListener('click', () => {
 
 disconnectError.addEventListener('click', () => {
   void runCommand(disconnectError, { type: 'disconnect' });
+});
+
+cursorToggle.addEventListener('change', () => {
+  const visible = cursorToggle.checked;
+  if (cursorBusy) return;
+  cursorBusy = true;
+  cursorToggle.disabled = true;
+
+  void (async () => {
+    try {
+      const reply = await sendCommand({ type: 'set_cursor', visible });
+      if (!reply.ok) {
+        cursorToggle.checked = !visible;
+        if (reply.message) setError(reply.message);
+      }
+    } catch {
+      cursorToggle.checked = !visible;
+      setError('The extension did not answer. Try again.');
+    } finally {
+      cursorBusy = false;
+      await refreshState();
+    }
+  })();
 });
 
 byId<HTMLButtonElement>('open-help').addEventListener('click', () => {

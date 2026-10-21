@@ -77,6 +77,26 @@
         <button class="button button-primary" id="retry" type="button">Try again</button>
         <button class="button button-secondary" id="disconnect-error" type="button" hidden>Disconnect</button>
       </section>
+
+      <section class="settings" id="settings-row" hidden>
+        <label class="setting">
+          <span class="setting-copy">
+            <span class="setting-title" id="cursor-setting-title">Agent cursor</span>
+            <span class="setting-hint" id="cursor-setting-hint">Show a pointer while the assistant works.</span>
+          </span>
+          <span class="switch">
+            <input
+              class="switch-input"
+              id="cursor-toggle"
+              type="checkbox"
+              role="switch"
+              aria-labelledby="cursor-setting-title"
+              aria-describedby="cursor-setting-hint"
+            />
+            <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          </span>
+        </label>
+      </section>
     </main>
     <script type="module" src="./main.ts"></script>
   </body>
