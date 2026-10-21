@@ -620,9 +620,21 @@ async function run() {
   check(result.text.includes(secondUrl), 'navigate reports the new URL');
   line('[e2e] navigate -> second page');
 
+  const followedLabel = await poll(async () => {
+    const tab = (await popupSnapshot(popupSession)).tab;
+    return /Second page/.test(tab) ? tab : null;
+  }, 'the popup label to follow the new page', 10_000);
+  line(`[e2e] popup label followed navigation: ${followedLabel}`);
+
   result = await state.mcp.tool('go_back');
   check(!result.isError, 'go_back succeeds');
   checkMatch(result.text, /Bridge fixture/, 'go_back returns the first page');
+
+  const returnedLabel = await poll(async () => {
+    const tab = (await popupSnapshot(popupSession)).tab;
+    return /Bridge fixture/.test(tab) ? tab : null;
+  }, 'the popup label to follow the back navigation', 10_000);
+  line(`[e2e] popup label followed go_back: ${returnedLabel}`);
 
   result = await state.mcp.tool('go_forward');
   check(!result.isError, 'go_forward succeeds');

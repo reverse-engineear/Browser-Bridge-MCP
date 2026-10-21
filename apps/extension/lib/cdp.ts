@@ -246,6 +246,7 @@ export class CdpSession {
       }
       case 'Page.navigatedWithinDocument':
         this.snapshotId += 1;
+        void this.refreshTabInfo();
         this.resolveLoadWaiters();
         return;
       case 'Page.loadEventFired':

@@ -223,4 +223,12 @@ chrome.runtime.onMessage.addListener((message: unknown) => {
   render(typed.state);
 });
 
+chrome.tabs.onUpdated.addListener((tabId, _changeInfo, tab) => {
+  if (!currentState?.tab || tabId !== currentState.tab.id) return;
+  const title = tab.title ?? currentState.tab.title;
+  const url = tab.url ?? currentState.tab.url;
+  if (title === currentState.tab.title && url === currentState.tab.url) return;
+  render({ ...currentState, tab: { ...currentState.tab, title, url } });
+});
+
 void refreshState();

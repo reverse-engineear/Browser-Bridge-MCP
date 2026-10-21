@@ -669,11 +669,32 @@ function isPopupCommand(message: unknown): message is PopupCommand {
   return type === 'get_state' || type === 'connect' || type === 'disconnect' || type === 'retry';
 }
 
+async function syncDesiredTab(): Promise<void> {
+  if (!desiredSession) return;
+  try {
+    const tab = await chrome.tabs.get(desiredSession.tabId);
+    const info = tabInfoFromTab(tab);
+    if (info.id < 0 || !info.url) return;
+    if (desiredSession.url === info.url && desiredSession.title === info.title) return;
+    desiredSession = {
+      tabId: info.id,
+      windowId: info.windowId,
+      url: info.url,
+      title: info.title,
+    };
+    state = { ...state, tab: info };
+    await writeSession(info);
+  } catch {
+    // The tab-close path owns the error state.
+  }
+}
+
 async function handleCommand(command: PopupCommand): Promise<{ ok: boolean; message?: string; state?: PopupState }> {
   await ensureInitialized();
 
   switch (command.type) {
     case 'get_state':
+      await syncDesiredTab();
       return { ok: true, state };
     case 'connect':
       return connectToTab(command.tabId);
@@ -705,9 +726,9 @@ export default defineBackground(() => {
   });
 
   chrome.tabs.onUpdated.addListener((tabId, _changeInfo, tab) => {
-    if (!cdp || cdp.tabId !== tabId || !socket || socket.readyState !== WebSocket.OPEN) return;
+    if (desiredSession?.tabId !== tabId && cdp?.tabId !== tabId) return;
     const info = tabInfoFromTab(tab);
-    if (!info.url) return;
+    if (info.id < 0 || !info.url) return;
     desiredSession = {
       tabId: info.id,
       windowId: info.windowId,
@@ -715,7 +736,7 @@ export default defineBackground(() => {
       title: info.title,
     };
     setState({ tab: info });
-    sendEvent('tab_updated', info);
+    if (socket && socket.readyState === WebSocket.OPEN) sendEvent('tab_updated', info);
     void writeSession(info);
   });
 
