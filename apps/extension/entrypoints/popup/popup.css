@@ -228,6 +228,25 @@ body {
   background: var(--color-surface-muted);
 }
 
+.button-ghost {
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.button-ghost:hover:not([disabled]) {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+}
+
+.clear-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs-size);
+  line-height: var(--text-xs-line);
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
 .spinner {
   width: 12px;
   height: 12px;

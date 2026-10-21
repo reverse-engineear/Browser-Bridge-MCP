@@ -548,17 +548,17 @@ async function run() {
   const expectedTools = [
     'navigate', 'go_back', 'go_forward', 'snapshot', 'click', 'type', 'hover',
     'select_option', 'press_key', 'wait', 'get_console_logs', 'get_network_requests',
-    'screenshot', 'drag',
+    'clear_network_requests', 'screenshot', 'drag',
   ];
   for (const client of [state.mcp, state.mcpSecond]) {
     const tools = await client.request('tools/list', {}, 20_000);
     check(Array.isArray(tools.tools), `${client.label}: tools/list returned an array`);
-    check(tools.tools.length === 14, `${client.label}: 14 tools are advertised (got ${tools.tools.length})`);
+    check(tools.tools.length === 15, `${client.label}: 15 tools are advertised (got ${tools.tools.length})`);
     for (const name of expectedTools) {
       check(tools.tools.some((tool) => tool.name === name), `${client.label}: tool ${name} is advertised`);
     }
   }
-  line('[e2e] both clients advertise the same 14 tools');
+  line('[e2e] both clients advertise the same 15 tools');
 
   step('Retrying the tab connection against the running bridge');
   await state.cdp.send('Target.activateTarget', { targetId: fixtureTarget });
@@ -754,6 +754,48 @@ async function run() {
 
   result = await state.mcp.tool('get_network_requests', { urlContains: 'no-such-request-12345' });
   checkMatch(result.text, /No captured requests match/, 'an unmatched URL filter explains itself');
+
+  result = await state.mcp.tool('get_network_requests', {
+    resourceType: 'document',
+    urlContains: 'second.html',
+    limit: 10,
+  });
+  check(!result.isError, 'get_network_requests with a resourceType filter succeeds');
+  checkMatch(result.text, /GET\s+200\s+Document/, 'the resourceType filter keeps the document row');
+
+  result = await state.mcp.tool('get_network_requests', { resourceType: 'XHR' });
+  check(!result.isError, 'get_network_requests accepts an XHR filter');
+  checkMatch(result.text, /No captured requests match/, 'an unmatched resourceType explains itself');
+  line('[e2e] resourceType filter verified');
+
+  await state.cdp.evaluate('document.getElementById("clear-captures").click()', popupSession);
+  await poll(
+    async () => {
+      const response = await state.mcp.tool('get_network_requests');
+      return /No network requests captured yet/.test(response.text) ? 'empty' : null;
+    },
+    'the popup clear button to empty the network capture',
+    10_000,
+  );
+  line('[e2e] popup clear button emptied the network capture');
+
+  result = await state.mcp.tool('navigate', { url: `${indexUrl}?after-clear=1` });
+  check(!result.isError, 'navigate after the popup clear succeeds');
+  checkMatch(result.text, /Bridge fixture/, 'navigate after the popup clear reaches the fixture');
+  await poll(
+    async () => {
+      const response = await state.mcp.tool('get_network_requests', { limit: 1 });
+      return /No network requests captured yet/.test(response.text) ? null : response;
+    },
+    'a fresh request after the popup clear',
+    10_000,
+  );
+  result = await state.mcp.tool('clear_network_requests');
+  check(!result.isError, 'clear_network_requests succeeds');
+  checkMatch(result.text, /Cleared \d+ captured request/, 'clear_network_requests reports the removed count');
+  result = await state.mcp.tool('get_network_requests');
+  checkMatch(result.text, /No network requests captured yet/, 'clear_network_requests empties the buffer');
+  line('[e2e] clear_network_requests emptied the buffer');
 
   result = await state.mcp.tool('navigate', { url: 'chrome://version' });
   check(result.isError, 'navigating to chrome:// is rejected');

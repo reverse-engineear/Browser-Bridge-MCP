@@ -144,13 +144,14 @@ The default port is 8787. The server also reads `BROWSER_BRIDGE_PORT`, but the e
 | `press_key` | `key` | Send a key or chord such as `Enter` or `Control+A` |
 | `wait` | `seconds` | Pause for 0–30 seconds |
 | `get_console_logs` | — | Return buffered console entries, up to 1,000 |
-| `get_network_requests` | `limit?`, `urlContains?` | Recent request metadata: method, URL, status, type, duration and size |
+| `get_network_requests` | `limit?`, `urlContains?`, `resourceType?` | Recent request metadata: method, URL, status, type, duration and size |
+| `clear_network_requests` | — | Discard the buffered requests and report how many were removed |
 | `screenshot` | — | Return a PNG of the visible viewport |
 | `drag` | `fromRef`, `toRef` | Drag between two elements from the latest snapshot |
 
 Snapshots are capped at 4,000 nodes and 256 KB. Screenshots are capped at 8 MB. Tool errors come back as `CODE: message` without breaking the session.
 
-Network inspection is metadata only. The extension keeps the latest 500 requests for the connected tab; a call returns the latest 100 unless you pass `limit` (1–500) or a case-insensitive `urlContains` filter. Capture starts when the tab connects and continues across navigation. Request and response headers, cookies, authorization values, and bodies are never recorded. Full URLs are recorded, including their query strings, so treat the output as sensitive when a site puts tokens in a URL.
+Network inspection is metadata only. The extension keeps the latest 500 requests for the connected tab; a call returns the latest 100 unless you pass `limit` (1–500), a case-insensitive `urlContains` filter, or a case-insensitive `resourceType` such as `XHR` or `Fetch`. `clear_network_requests` empties the buffer, and the popup's **Clear network capture** button does the same from the browser. Capture starts when the tab connects and continues across navigation. Request and response headers, cookies, authorization values, and bodies are never recorded. Full URLs are recorded, including their query strings, so treat the output as sensitive when a site puts tokens in a URL.
 
 ## Troubleshooting
 

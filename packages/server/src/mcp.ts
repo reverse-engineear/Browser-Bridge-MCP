@@ -44,7 +44,7 @@ export function createMcpServer(options: McpServerOptions): Server {
         'Start with snapshot: it returns refs such as s1e42 for clickable and typable elements.',
         'Refs expire when the page navigates. Take a fresh snapshot after any navigation or submit.',
         'The bridge can be shared by several assistants. Another one may have changed the page, so snapshot again if the state is uncertain.',
-        'Use get_console_logs and get_network_requests to inspect what the page did. Network results are metadata only; headers, cookies and bodies are never captured.',
+        'Use get_console_logs and get_network_requests to inspect what the page did; filter requests by URL or resourceType, and call clear_network_requests before reproducing an action. Network results are metadata only; headers, cookies and bodies are never captured.',
         'The user can see every action in their own browser, so act only on the connected tab.',
       ].join(' '),
     },

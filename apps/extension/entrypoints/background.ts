@@ -617,6 +617,11 @@ async function runTool(name: ToolName, args: ToolArgs): Promise<unknown> {
       return session.consoleLogs();
     case 'get_network_requests':
       return session.networkRequests(args as ToolArgsMap['get_network_requests']);
+    case 'clear_network_requests': {
+      const cleared = networkBuffer.size;
+      networkBuffer.clear();
+      return { ok: true, cleared };
+    }
     case 'screenshot':
       return session.screenshot();
     case 'drag': {
@@ -666,7 +671,13 @@ async function handleToolCall(call: ToolCall): Promise<void> {
 function isPopupCommand(message: unknown): message is PopupCommand {
   if (!message || typeof message !== 'object') return false;
   const type = (message as { type?: unknown }).type;
-  return type === 'get_state' || type === 'connect' || type === 'disconnect' || type === 'retry';
+  return (
+    type === 'get_state' ||
+    type === 'connect' ||
+    type === 'disconnect' ||
+    type === 'retry' ||
+    type === 'clear_captures'
+  );
 }
 
 async function syncDesiredTab(): Promise<void> {
@@ -702,6 +713,9 @@ async function handleCommand(command: PopupCommand): Promise<{ ok: boolean; mess
       return connectToTab(command.tabId ?? state.tab?.id);
     case 'disconnect':
       await disconnect();
+      return { ok: true };
+    case 'clear_captures':
+      networkBuffer.clear();
       return { ok: true };
     default:
       return { ok: false, message: 'Unknown command.' };

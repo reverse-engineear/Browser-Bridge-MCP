@@ -43,6 +43,7 @@ export interface NetworkFailedEvent {
 export interface NetworkSnapshotOptions {
   limit?: number;
   urlContains?: string;
+  resourceType?: string;
 }
 
 function label(value: unknown, maxLength = MAX_LABEL_LENGTH): string | undefined {
@@ -162,8 +163,13 @@ export class NetworkBuffer {
     const requestedLimit = integer(options.limit) ?? DEFAULT_LIMIT;
     const limit = Math.max(1, Math.min(MAX_NETWORK_ENTRIES, requestedLimit));
     const filter = label(options.urlContains)?.toLowerCase();
+    const typeFilter = label(options.resourceType, 32)?.toLowerCase();
     const all = [...this.entries.values()];
-    const matched = filter ? all.filter((entry) => entry.url.toLowerCase().includes(filter)) : all;
+    const matched = all.filter(
+      (entry) =>
+        (!filter || entry.url.toLowerCase().includes(filter)) &&
+        (!typeFilter || entry.resourceType.toLowerCase() === typeFilter),
+    );
 
     return {
       entries: matched.slice(-limit).map((entry) => ({ ...entry })),

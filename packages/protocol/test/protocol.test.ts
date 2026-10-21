@@ -85,10 +85,18 @@ describe('tool arguments', () => {
   it('bounds the network request query', () => {
     expect(ToolArgsSchemas.get_network_requests.safeParse({}).success).toBe(true);
     expect(ToolArgsSchemas.get_network_requests.safeParse({ limit: 20, urlContains: 'api' }).success).toBe(true);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ resourceType: 'XHR' }).success).toBe(true);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ resourceType: 'xhr' }).success).toBe(true);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ resourceType: '   ' }).success).toBe(false);
     expect(ToolArgsSchemas.get_network_requests.safeParse({ limit: 0 }).success).toBe(false);
     expect(ToolArgsSchemas.get_network_requests.safeParse({ limit: 501 }).success).toBe(false);
     expect(ToolArgsSchemas.get_network_requests.safeParse({ urlContains: '   ' }).success).toBe(false);
     expect(ToolArgsSchemas.get_network_requests.safeParse({ headers: true }).success).toBe(false);
+  });
+
+  it('accepts no arguments for the network clear tool', () => {
+    expect(ToolArgsSchemas.clear_network_requests.safeParse({}).success).toBe(true);
+    expect(ToolArgsSchemas.clear_network_requests.safeParse({ all: true }).success).toBe(false);
   });
 });
 
@@ -184,6 +192,21 @@ describe('result messages', () => {
         total: 1,
         dropped: 0,
       }).success,
+    ).toBe(false);
+  });
+
+  it('checks the network clear result shape', () => {
+    expect(
+      ToolResultDataSchemas.clear_network_requests.safeParse({ ok: true, cleared: 3 }).success,
+    ).toBe(true);
+    expect(
+      ToolResultDataSchemas.clear_network_requests.safeParse({ ok: true, cleared: 0 }).success,
+    ).toBe(true);
+    expect(
+      ToolResultDataSchemas.clear_network_requests.safeParse({ ok: true, cleared: -1 }).success,
+    ).toBe(false);
+    expect(
+      ToolResultDataSchemas.clear_network_requests.safeParse({ ok: true }).success,
     ).toBe(false);
   });
 });

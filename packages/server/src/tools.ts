@@ -95,8 +95,15 @@ const TOOL_COPY: ToolCopy[] = [
     name: 'get_network_requests',
     title: 'Read network requests',
     description:
-      'Return metadata for requests the connected tab made since it connected: method, URL, resource type, status, duration, encoded size, cache or service-worker use, redirects and failures. Request and response headers, cookies and bodies are never recorded. Returns the latest 100 entries by default; pass limit or a case-insensitive urlContains filter to narrow the result. Full URLs can contain sensitive query values.',
+      'Return metadata for requests the connected tab made since it connected: method, URL, resource type, status, duration, encoded size, cache or service-worker use, redirects and failures. Request and response headers, cookies and bodies are never recorded. Returns the latest 100 entries by default; pass limit, a case-insensitive urlContains filter, or a resourceType such as XHR or Fetch to narrow the result. Full URLs can contain sensitive query values.',
     annotations: { readOnlyHint: true, openWorldHint: true },
+  },
+  {
+    name: 'clear_network_requests',
+    title: 'Clear captured requests',
+    description:
+      'Discard every buffered network request for the connected tab and report how many entries were removed. Capture resumes immediately. Use it right before reproducing an action so the next read contains only that action.',
+    annotations: { destructiveHint: true, idempotentHint: true },
   },
   {
     name: 'screenshot',
@@ -224,7 +231,7 @@ export function formatToolResult<K extends ToolName>(
         return text(
           network.total === 0
             ? 'No network requests captured yet. Requests are recorded from the moment this tab connects.'
-            : 'No captured requests match that URL filter.',
+            : 'No captured requests match those filters.',
         );
       }
       const lines = network.entries.map(formatNetworkEntry);
@@ -232,6 +239,13 @@ export function formatToolResult<K extends ToolName>(
         lines.unshift(`[buffer] ${network.dropped} older requests were dropped.`);
       }
       return text(lines.join('\n'));
+    }
+    case 'clear_network_requests': {
+      const cleared = data as ToolResultDataMap['clear_network_requests'];
+      if (cleared.cleared === 0) return text('The network capture was already empty.');
+      return text(
+        `Cleared ${cleared.cleared} captured request${cleared.cleared === 1 ? '' : 's'}. Capture is running again.`,
+      );
     }
     case 'screenshot': {
       const shot = data as ToolResultDataMap['screenshot'];

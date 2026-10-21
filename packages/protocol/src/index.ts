@@ -76,6 +76,7 @@ export const TOOL_NAMES = [
   'wait',
   'get_console_logs',
   'get_network_requests',
+  'clear_network_requests',
   'screenshot',
   'drag',
 ] as const;
@@ -121,8 +122,16 @@ export const ToolArgsSchemas = {
     .object({
       limit: z.number().int().min(1).max(MAX_NETWORK_ENTRIES).optional(),
       urlContains: z.string().trim().min(1).max(2_048).optional(),
+      resourceType: z
+        .string()
+        .trim()
+        .min(1)
+        .max(32)
+        .describe('Resource type to match, case-insensitive. Examples: Document, XHR, Fetch, Script, Image.')
+        .optional(),
     })
     .strict(),
+  clear_network_requests: noArgs,
   screenshot: noArgs,
   drag: z.object({ fromRef: RefSchema, toRef: RefSchema }).strict(),
 } as const;
@@ -318,6 +327,13 @@ export const NetworkDataSchema = z
   })
   .strict();
 
+export const ClearNetworkDataSchema = z
+  .object({
+    ok: z.literal(true),
+    cleared: z.number().int().nonnegative(),
+  })
+  .strict();
+
 export const ScreenshotDataSchema = z
   .object({
     base64: z.string().max(MAX_SCREENSHOT_BYTES * 2),
@@ -341,6 +357,7 @@ export const ToolResultDataSchemas = {
   wait: OkDataSchema,
   get_console_logs: ConsoleDataSchema,
   get_network_requests: NetworkDataSchema,
+  clear_network_requests: ClearNetworkDataSchema,
   screenshot: ScreenshotDataSchema,
   drag: OkDataSchema,
 } as const;
