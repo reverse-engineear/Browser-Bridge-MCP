@@ -768,34 +768,24 @@ async function run() {
   checkMatch(result.text, /No captured requests match/, 'an unmatched resourceType explains itself');
   line('[e2e] resourceType filter verified');
 
-  await state.cdp.evaluate('document.getElementById("clear-captures").click()', popupSession);
-  await poll(
-    async () => {
-      const response = await state.mcp.tool('get_network_requests');
-      return /No network requests captured yet/.test(response.text) ? 'empty' : null;
-    },
-    'the popup clear button to empty the network capture',
-    10_000,
-  );
-  line('[e2e] popup clear button emptied the network capture');
-
-  result = await state.mcp.tool('navigate', { url: `${indexUrl}?after-clear=1` });
-  check(!result.isError, 'navigate after the popup clear succeeds');
-  checkMatch(result.text, /Bridge fixture/, 'navigate after the popup clear reaches the fixture');
-  await poll(
-    async () => {
-      const response = await state.mcp.tool('get_network_requests', { limit: 1 });
-      return /No network requests captured yet/.test(response.text) ? null : response;
-    },
-    'a fresh request after the popup clear',
-    10_000,
-  );
   result = await state.mcp.tool('clear_network_requests');
   check(!result.isError, 'clear_network_requests succeeds');
   checkMatch(result.text, /Cleared \d+ captured request/, 'clear_network_requests reports the removed count');
   result = await state.mcp.tool('get_network_requests');
   checkMatch(result.text, /No network requests captured yet/, 'clear_network_requests empties the buffer');
-  line('[e2e] clear_network_requests emptied the buffer');
+
+  result = await state.mcp.tool('navigate', { url: `${indexUrl}?after-clear=1` });
+  check(!result.isError, 'navigate after the clear succeeds');
+  checkMatch(result.text, /Bridge fixture/, 'navigate after the clear reaches the fixture');
+  await poll(
+    async () => {
+      const response = await state.mcp.tool('get_network_requests', { limit: 1 });
+      return /No network requests captured yet/.test(response.text) ? null : response;
+    },
+    'capture to resume after clear_network_requests',
+    10_000,
+  );
+  line('[e2e] clear_network_requests emptied the buffer and capture resumed');
 
   result = await state.mcp.tool('navigate', { url: 'chrome://version' });
   check(result.isError, 'navigating to chrome:// is rejected');

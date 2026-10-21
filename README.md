@@ -151,7 +151,7 @@ The default port is 8787. The server also reads `BROWSER_BRIDGE_PORT`, but the e
 
 Snapshots are capped at 4,000 nodes and 256 KB. Screenshots are capped at 8 MB. Tool errors come back as `CODE: message` without breaking the session.
 
-Network inspection is metadata only. The extension keeps the latest 500 requests for the connected tab; a call returns the latest 100 unless you pass `limit` (1–500), a case-insensitive `urlContains` filter, or a case-insensitive `resourceType` such as `XHR` or `Fetch`. `clear_network_requests` empties the buffer, and the popup's **Clear network capture** button does the same from the browser. Capture starts when the tab connects and continues across navigation. Request and response headers, cookies, authorization values, and bodies are never recorded. Full URLs are recorded, including their query strings, so treat the output as sensitive when a site puts tokens in a URL.
+Network inspection is metadata only. The extension keeps the latest 500 requests for the connected tab; a call returns the latest 100 unless you pass `limit` (1–500), a case-insensitive `urlContains` filter, or a case-insensitive `resourceType` such as `XHR` or `Fetch`. `clear_network_requests` empties the buffer so the agent can start a clean capture. Capture starts when the tab connects and continues across navigation. Request and response headers, cookies, authorization values, and bodies are never recorded. Full URLs are recorded, including their query strings, so treat the output as sensitive when a site puts tokens in a URL.
 
 ## Troubleshooting
 

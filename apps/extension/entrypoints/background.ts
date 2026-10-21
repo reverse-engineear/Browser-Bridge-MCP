@@ -671,13 +671,7 @@ async function handleToolCall(call: ToolCall): Promise<void> {
 function isPopupCommand(message: unknown): message is PopupCommand {
   if (!message || typeof message !== 'object') return false;
   const type = (message as { type?: unknown }).type;
-  return (
-    type === 'get_state' ||
-    type === 'connect' ||
-    type === 'disconnect' ||
-    type === 'retry' ||
-    type === 'clear_captures'
-  );
+  return type === 'get_state' || type === 'connect' || type === 'disconnect' || type === 'retry';
 }
 
 async function syncDesiredTab(): Promise<void> {
@@ -713,9 +707,6 @@ async function handleCommand(command: PopupCommand): Promise<{ ok: boolean; mess
       return connectToTab(command.tabId ?? state.tab?.id);
     case 'disconnect':
       await disconnect();
-      return { ok: true };
-    case 'clear_captures':
-      networkBuffer.clear();
       return { ok: true };
     default:
       return { ok: false, message: 'Unknown command.' };

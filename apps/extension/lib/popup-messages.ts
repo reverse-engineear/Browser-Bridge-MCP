@@ -13,8 +13,7 @@ export type PopupCommand =
   | { type: 'get_state' }
   | { type: 'connect'; tabId?: number }
   | { type: 'disconnect' }
-  | { type: 'retry'; tabId?: number }
-  | { type: 'clear_captures' };
+  | { type: 'retry'; tabId?: number };
 
 export interface StateMessage {
   type: 'state';

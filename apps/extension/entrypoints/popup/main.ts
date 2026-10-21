@@ -26,8 +26,6 @@ const connectingView = byId<HTMLElement>('connecting-view');
 
 const connectedView = byId<HTMLElement>('connected-view');
 const disconnectButton = byId<HTMLButtonElement>('disconnect');
-const clearCaptureButton = byId<HTMLButtonElement>('clear-captures');
-const clearNote = byId<HTMLParagraphElement>('clear-note');
 
 const reconnectingView = byId<HTMLElement>('reconnecting-view');
 const retryReconnect = byId<HTMLButtonElement>('retry-reconnect');
@@ -40,7 +38,6 @@ const disconnectError = byId<HTMLButtonElement>('disconnect-error');
 let currentState: PopupState | null = null;
 let lastView = '';
 let commandActive = false;
-let clearNoteTimer: ReturnType<typeof setTimeout> | null = null;
 
 function setHidden(element: HTMLElement, hidden: boolean): void {
   element.hidden = hidden;
@@ -102,7 +99,6 @@ function render(state: PopupState): void {
   setHidden(connectedView, view !== 'connected');
   setHidden(reconnectingView, view !== 'reconnecting');
   setHidden(errorView, view !== 'error');
-  if (view !== 'connected') clearNote.hidden = true;
 
   if (view === 'idle') {
     statusRow.hidden = true;
@@ -143,7 +139,6 @@ function render(state: PopupState): void {
   connectButton.disabled = commandActive;
   retryButton.disabled = commandActive;
   disconnectButton.disabled = commandActive;
-  clearCaptureButton.disabled = commandActive;
   disconnectError.disabled = commandActive;
 
   if (lastView !== view) {
@@ -199,19 +194,6 @@ connectButton.addEventListener('click', () => {
 
 disconnectButton.addEventListener('click', () => {
   void runCommand(disconnectButton, { type: 'disconnect' });
-});
-
-clearCaptureButton.addEventListener('click', () => {
-  void (async () => {
-    const reply = await runCommand(clearCaptureButton, { type: 'clear_captures' });
-    if (!reply.ok) return;
-    clearNote.hidden = false;
-    if (clearNoteTimer !== null) clearTimeout(clearNoteTimer);
-    clearNoteTimer = setTimeout(() => {
-      clearNote.hidden = true;
-      clearNoteTimer = null;
-    }, 3_000);
-  })();
 });
 
 retryButton.addEventListener('click', () => {
