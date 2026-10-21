@@ -1,0 +1,22 @@
+{
+  "name": "browser-bridge-extension",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Chrome side of Browser Bridge: expose one tab to any local MCP client through a shared bridge.",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "typecheck": "wxt prepare && tsc --noEmit"
+  },
+  "dependencies": {
+    "@browser-bridge/protocol": "*",
+    "zod": "3.24.2"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "5.6.3",
+    "wxt": "^0.20.0"
+  }
+}

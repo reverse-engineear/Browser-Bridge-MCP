@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser Bridge setup</title>
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./help.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="page-header">
+        <p class="eyebrow">Browser Bridge</p>
+        <h1>Set up Browser Bridge</h1>
+        <p class="lede">
+          Browser Bridge joins two pieces: this extension and a local bridge that any MCP client can use.
+          Together they let one AI assistant read and operate one browser tab.
+        </p>
+      </header>
+
+      <section aria-labelledby="steps-title">
+        <h2 id="steps-title">Two steps</h2>
+        <ol class="steps">
+          <li>
+            <h3>Start your MCP client</h3>
+            <p>
+              Add the server to your MCP client and start a session. The first client to connect starts a
+              shared bridge in the background; later clients join the same bridge, so several assistants
+              can use it without fighting over a port.
+            </p>
+          </li>
+          <li>
+            <h3>Connect a tab</h3>
+            <p>
+              Open the page you want the assistant to use, then open the popup and choose
+              <strong>Connect tab</strong>. One tab is connected at a time, and every MCP client on this
+              computer shares that tab. Choose <strong>Disconnect</strong> when you are done.
+            </p>
+          </li>
+        </ol>
+      </section>
+
+      <section aria-labelledby="config-title">
+        <h2 id="config-title">Point your MCP client at the server</h2>
+        <p>
+          The server speaks MCP over standard input and output. Use your client's usual server settings and
+          replace the path with the built server file on this computer.
+        </p>
+
+        <h3>Claude Code</h3>
+        <pre><code>claude mcp add browser-bridge -- node C:\path\to\browser-bridge-mcp\packages\server\dist\index.js</code></pre>
+
+        <h3>JSON settings for other clients</h3>
+        <pre><code>{
+  "mcpServers": {
+    "browser-bridge": {
+      "command": "node",
+      "args": ["C:\\path\\to\\browser-bridge-mcp\\packages\\server\\dist\\index.js"]
+    }
+  }
+}</code></pre>
+        <p class="note">
+          Cursor, Claude Desktop, VS Code, Cline, Windsurf, Zed and other client apps place this block in
+          different files. Keep the command and arguments the same; the client's own documentation shows
+          where the file lives. Every client can point at the same server file: the first one starts the
+          shared bridge and the rest reuse it.
+        </p>
+        <p class="note">
+          The bridge listens on port 8787, and this extension is built for that port. If another program
+          owns 8787, stop it and choose <strong>Try again</strong>. Run the server with
+          <code>--stop</code> to shut the shared bridge down.
+        </p>
+      </section>
+
+      <section aria-labelledby="tools-title">
+        <h2 id="tools-title">What the assistant can do</h2>
+        <ul class="columns">
+          <li>Open a web address, go back, or go forward</li>
+          <li>Read an accessible outline of the page with element references</li>
+          <li>Click, hover, type, or select an option</li>
+          <li>Press a key or a keyboard shortcut</li>
+          <li>Drag between two elements with the pointer</li>
+          <li>Wait for the page to settle</li>
+          <li>Read recent console messages</li>
+          <li>Take a screenshot of the visible page</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="limits-title">
+        <h2 id="limits-title">Pages Chrome will not share</h2>
+        <p>Chrome blocks automation on some surfaces. The extension will say so instead of pretending to work.</p>
+        <ul>
+          <li><code>chrome://</code> pages, including settings and the new tab page</li>
+          <li>The Chrome Web Store and other extension galleries</li>
+          <li>Other extension pages, including this one</li>
+          <li>PDF pages in Chrome's viewer</li>
+          <li>Any tab that already has DevTools open: Chrome allows one debugger per tab</li>
+        </ul>
+      </section>
+
+      <section aria-labelledby="privacy-title">
+        <h2 id="privacy-title">Where your data goes</h2>
+        <p>
+          The shared bridge listens only on your own loopback address. Page content, screenshots and
+          console messages move between this extension, the bridge and the MCP clients on this computer.
+          The bridge itself does not send anything to another machine.
+        </p>
+        <p>
+          The bridge accepts the extension from this Chrome profile and connections from local programs
+          that speak its client protocol, with no password. Only install extensions and agents you trust:
+          every MCP client that connects can read and operate the tab you connect.
+        </p>
+        <p>
+          Your MCP client may send tool results to the model provider that powers it. That transfer is
+          between you and that client, not something this extension does.
+        </p>
+      </section>
+
+      <section aria-labelledby="fix-title">
+        <h2 id="fix-title">If something goes wrong</h2>
+        <dl class="fixes">
+          <dt>The popup says the server did not answer</dt>
+          <dd>Start an MCP client that has the server configured, then choose <strong>Try again</strong>. The first client starts the bridge; after that, other clients join it.</dd>
+
+          <dt>Another browser session is already connected</dt>
+          <dd>One Chrome tab session can use the bridge at a time. Disconnect the other extension session, then connect this tab again.</dd>
+
+          <dt>Connection lost while a page was open</dt>
+          <dd>Open the popup and choose <strong>Try again</strong>. The extension also retries on its own while a session is active.</dd>
+
+          <dt>The tab disappeared</dt>
+          <dd>Open the page again, then connect the new tab from the popup.</dd>
+
+          <dt>Chrome stopped debugging the tab</dt>
+          <dd>Close DevTools for that tab, then connect it again from the popup.</dd>
+
+          <dt>Two assistants disagree about the page</dt>
+          <dd>They share one tab. Ask each assistant to take a new snapshot before its next action.</dd>
+        </dl>
+      </section>
+
+      <footer class="page-footer">
+        <p>Browser Bridge keeps automation on this machine. You can stop it at any time with Disconnect.</p>
+      </footer>
+    </main>
+  </body>
+</html>

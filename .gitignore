@@ -1,0 +1,22 @@
+# Dependencies and build output
+node_modules/
+dist/
+.output/
+.wxt/
+*.tsbuildinfo
+coverage/
+
+# Local research and reference material (not part of the portable source)
+replica/
+artifacts/
+
+# Local configuration and logs
+.env
+.env.*
+!.env.example
+*.log
+
+# Archives and OS cruft
+*.zip
+.DS_Store
+Thumbs.db

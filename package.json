@@ -1,0 +1,32 @@
+{
+  "name": "browser-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "npm run build --workspace @browser-bridge/protocol && npm run build --workspace browser-bridge-mcp && npm run build --workspace browser-bridge-extension",
+    "build:server": "npm run build --workspace @browser-bridge/protocol && npm run build --workspace browser-bridge-mcp",
+    "build:extension": "npm run build --workspace browser-bridge-extension",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "node scripts/e2e.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "pack:server": "npm pack --workspace browser-bridge-mcp --dry-run"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "tsup": "8.4.0",
+    "typescript": "5.6.3",
+    "vitest": "2.1.9"
+  }
+}

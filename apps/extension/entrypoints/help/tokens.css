@@ -1,0 +1,91 @@
+/* Browser Bridge design tokens — light is default, dark follows system unless data-theme is set. */
+:root,
+[data-theme="light"] {
+  --color-bg: #F5F5F7;
+  --color-surface: #FFFFFF;
+  --color-surface-muted: #F4F4F5;
+  --color-border: #E4E4E7;
+  --color-border-input: #75757E;
+  --color-text: #18181B;
+  --color-text-muted: #5D5D66;
+  --color-primary: #18181B;
+  --color-on-primary: #FAFAFA;
+  --color-accent: #4F46E5;
+  --color-on-accent: #FFFFFF;
+  --color-danger: #B42318;
+  --color-success: #157A3F;
+  --color-warning: #B45309;
+  --color-focus: var(--color-accent);
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, "Liberation Mono", monospace;
+
+  --text-xs-size: 12px; --text-xs-line: 16px; --text-xs-weight: 500;
+  --text-sm-size: 14px; --text-sm-line: 20px; --text-sm-weight: 400;
+  --text-base-size: 16px; --text-base-line: 24px; --text-base-weight: 400;
+  --text-lg-size: 20px; --text-lg-line: 28px; --text-lg-weight: 600;
+
+  --space-0: 0; --space-1: 4px; --space-2: 8px; --space-3: 12px;
+  --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px;
+
+  --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10);
+  --shadow-pop: 0 12px 32px rgba(16,24,40,.18);
+
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-ease: cubic-bezier(.2,.8,.2,1);
+
+  --popup-width: 250px;
+  --popup-padding: 16px;
+  --header-height: 32px;
+  --control-height: 36px;
+  --icon-size: 16px;
+  --help-target: 28px;
+  --focus-ring: 2px;
+}
+
+[data-theme="dark"] {
+  --color-bg: #0F0F11;
+  --color-surface: #18181B;
+  --color-surface-muted: #212124;
+  --color-border: #2E2E33;
+  --color-border-input: #8B8B94;
+  --color-text: #F4F4F5;
+  --color-text-muted: #A6A6AE;
+  --color-primary: #FAFAFA;
+  --color-on-primary: #18181B;
+  --color-accent: #A5B4FC;
+  --color-on-accent: #18181B;
+  --color-danger: #F87171;
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-focus: var(--color-accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --color-bg: #0F0F11;
+    --color-surface: #18181B;
+    --color-surface-muted: #212124;
+    --color-border: #2E2E33;
+    --color-border-input: #8B8B94;
+    --color-text: #F4F4F5;
+    --color-text-muted: #A6A6AE;
+    --color-primary: #FAFAFA;
+    --color-on-primary: #18181B;
+    --color-accent: #A5B4FC;
+    --color-on-accent: #18181B;
+    --color-danger: #F87171;
+    --color-success: #4ADE80;
+    --color-warning: #FBBF24;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+  }
+}

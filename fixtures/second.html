@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Second page</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page">
+    <p class="kicker">Local test page</p>
+    <h1>Second page</h1>
+    <p>Navigation worked. This page is deliberately small.</p>
+  </header>
+
+  <main class="page">
+    <p><a id="back-link" href="index.html">Back to the fixture</a></p>
+    <button id="second-button" type="button">Second page action</button>
+    <p id="second-status" role="status">Nothing pressed yet.</p>
+  </main>
+
+  <script>
+    console.log('second page ready');
+    document.getElementById('second-button').addEventListener('click', () => {
+      document.getElementById('second-status').textContent = 'Second page action pressed.';
+      console.log('second action pressed');
+    });
+  </script>
+</body>
+</html>

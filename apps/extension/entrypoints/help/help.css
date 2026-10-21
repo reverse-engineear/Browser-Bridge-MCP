@@ -1,0 +1,151 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base-size);
+  line-height: var(--text-base-line);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-6);
+}
+
+.page-header {
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-xs-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+h1 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg-size);
+  line-height: var(--text-lg-line);
+  font-weight: 600;
+}
+
+h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-size: var(--text-base-size);
+  line-height: var(--text-base-line);
+  font-weight: 600;
+}
+
+h3 {
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--text-sm-size);
+  line-height: var(--text-sm-line);
+  font-weight: 600;
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+.lede {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.note {
+  font-size: var(--text-sm-size);
+  line-height: var(--text-sm-line);
+  color: var(--color-text-muted);
+}
+
+ol.steps {
+  margin: 0;
+  padding-left: var(--space-6);
+}
+
+ol.steps li {
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-1);
+}
+
+ol.steps h3 {
+  margin-top: 0;
+}
+
+ul {
+  margin: 0;
+  padding-left: var(--space-6);
+}
+
+li {
+  margin-bottom: var(--space-1);
+}
+
+.columns {
+  columns: 2;
+  column-gap: var(--space-8);
+}
+
+pre {
+  overflow-x: auto;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm-size);
+}
+
+p code,
+li code {
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+dl.fixes {
+  margin: 0;
+}
+
+dt {
+  font-weight: 600;
+  margin-top: var(--space-3);
+}
+
+dd {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+}
+
+.page-footer {
+  margin-top: var(--space-8);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-sm-size);
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 560px) {
+  .page {
+    padding: var(--space-6) var(--space-4);
+  }
+  .columns {
+    columns: 1;
+  }
+}

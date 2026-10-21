@@ -1,0 +1,11 @@
+Browser Bridge MCP
+
+This project's server and protocol design were developed with reference to the
+public Browser MCP project, https://github.com/browsermcp/mcp, which is
+licensed under the Apache License, Version 2.0.
+
+The Chrome extension in apps/extension is an original clean-room
+implementation. It contains no code, markup, styles, icons, images, or copy
+from the Browser MCP extension.
+
+Browser Bridge MCP is not affiliated with or endorsed by Browser MCP.

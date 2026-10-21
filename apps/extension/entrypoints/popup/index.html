@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser Bridge</title>
+    <link rel="stylesheet" href="./tokens.css" />
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main class="popup" aria-labelledby="product-name">
+      <header class="header">
+        <p class="brand" id="product-name">
+          <svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22v-5" />
+            <path d="M9 8V2" />
+            <path d="M15 8V2" />
+            <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" />
+          </svg>
+          <span>Browser Bridge</span>
+        </p>
+        <button class="icon-button" id="open-help" type="button" aria-label="Setup help" title="Setup help">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+          </svg>
+        </button>
+      </header>
+
+      <section class="status" id="status-row" role="status" aria-live="polite" hidden>
+        <span class="dot" id="status-dot" aria-hidden="true"></span>
+        <span id="status-text"></span>
+      </section>
+
+      <p class="tab-row" id="tab-row" hidden></p>
+
+      <div class="error-panel" id="error-panel" role="alert" hidden>
+        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </svg>
+        <p id="error-text"></p>
+      </div>
+
+      <p class="loading-row" id="loading-view">
+        <span class="dot is-muted" aria-hidden="true"></span>
+        <span>Starting the extension…</span>
+      </p>
+
+      <section id="idle-view" hidden>
+        <p class="helper">Connect the tab you want your assistant to use.</p>
+        <button class="button button-primary" id="connect" type="button">Connect tab</button>
+        <p class="fine-print">Any MCP client on this computer can use the tab once it is connected.</p>
+      </section>
+
+      <section id="connecting-view" hidden>
+        <button class="button button-primary" type="button" disabled aria-busy="true">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Connecting…</span>
+        </button>
+      </section>
+
+      <section id="connected-view" hidden>
+        <p class="helper">The assistant can use this tab while the session is open.</p>
+        <button class="button button-secondary" id="disconnect" type="button">Disconnect</button>
+      </section>
+
+      <section id="reconnecting-view" hidden>
+        <p class="helper" role="status">The server connection dropped. Trying again…</p>
+        <button class="button button-primary" id="retry-reconnect" type="button">Try again</button>
+        <button class="button button-secondary" id="stop-reconnect" type="button">Disconnect</button>
+      </section>
+
+      <section id="error-view" hidden>
+        <button class="button button-primary" id="retry" type="button">Try again</button>
+        <button class="button button-secondary" id="disconnect-error" type="button" hidden>Disconnect</button>
+      </section>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

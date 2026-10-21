@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bridge fixture</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="page">
+    <p class="kicker">Local test page</p>
+    <h1>Bridge fixture</h1>
+    <p>This page exists so the Browser Bridge end-to-end checks have a real form, a few buttons and a console.</p>
+  </header>
+
+  <main class="page">
+    <p id="status" role="status">Ready.</p>
+
+    <p><a id="next-link" href="second.html">Open the second page</a></p>
+
+    <p><button id="hello-button" type="button">Say hello</button></p>
+
+    <form id="profile-form" autocomplete="off">
+      <fieldset>
+        <legend>Profile</legend>
+        <label for="name-input">Name</label>
+        <input id="name-input" name="name" autocomplete="off">
+
+        <label for="choice-select">Colour</label>
+        <select id="choice-select" name="colour">
+          <option value="">Choose one</option>
+          <option value="red">Red</option>
+          <option value="green">Green</option>
+          <option value="blue">Blue</option>
+        </select>
+
+        <label for="password-input">Password</label>
+        <input id="password-input" name="password" type="password" autocomplete="off">
+
+        <button id="save-button" type="submit">Save name</button>
+      </fieldset>
+    </form>
+
+    <section aria-labelledby="drag-heading">
+      <h2 id="drag-heading">Drag check</h2>
+      <div class="drag-row">
+        <div id="drag-source" class="card">Drag this card</div>
+        <div id="drop-target" class="drop">Drop here</div>
+      </div>
+    </section>
+
+    <section aria-labelledby="shadow-heading">
+      <h2 id="shadow-heading">Shadow DOM check</h2>
+      <shadow-widget></shadow-widget>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
