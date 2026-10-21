@@ -27,6 +27,8 @@ This repository is the portable source: everything needed is here, with no prebu
 1. **Get the source.** Clone the repository or unzip a source download, then open a terminal in the project root:
 
    ```bash
+   git clone https://github.com/reverse-engineear/Browser-Bridge-MCP.git
+   cd Browser-Bridge-MCP
    npm install
    npm run build
    ```
