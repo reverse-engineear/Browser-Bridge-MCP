@@ -8,6 +8,14 @@ import {
 } from '@browser-bridge/protocol';
 import { AutomationError, chromeErrorMessage } from './errors.js';
 import type { ConsoleBuffer } from './console-buffer.js';
+import type {
+  NetworkBuffer,
+  NetworkFailedEvent,
+  NetworkFinishedEvent,
+  NetworkRequestStartedEvent,
+  NetworkResponseReceivedEvent,
+  NetworkSnapshotOptions,
+} from './network-buffer.js';
 import { parseKeyChord, type KeyStroke } from './keys.js';
 import { buildSnapshot, type AxNode, type SnapshotResult } from './snapshot.js';
 
@@ -105,6 +113,7 @@ function pngDimensions(base64: string): { width: number; height: number; bytes: 
 export class CdpSession {
   readonly tabId: number;
   private readonly consoleBuffer: ConsoleBuffer;
+  private readonly networkBuffer: NetworkBuffer;
   private readonly handlers: CdpSessionHandlers;
   private readonly eventListener: (
     source: chrome.debugger.Debuggee,
@@ -118,9 +127,15 @@ export class CdpSession {
   private pageTitle = '';
   private disposed = false;
 
-  private constructor(tabId: number, consoleBuffer: ConsoleBuffer, handlers: CdpSessionHandlers) {
+  private constructor(
+    tabId: number,
+    consoleBuffer: ConsoleBuffer,
+    networkBuffer: NetworkBuffer,
+    handlers: CdpSessionHandlers,
+  ) {
     this.tabId = tabId;
     this.consoleBuffer = consoleBuffer;
+    this.networkBuffer = networkBuffer;
     this.handlers = handlers;
 
     this.eventListener = (source, method, params) => {
@@ -144,6 +159,7 @@ export class CdpSession {
   static async attach(
     tabId: number,
     consoleBuffer: ConsoleBuffer,
+    networkBuffer: NetworkBuffer,
     handlers: CdpSessionHandlers,
   ): Promise<CdpSession> {
     await new Promise<void>((resolve) => {
@@ -161,7 +177,7 @@ export class CdpSession {
       });
     });
 
-    const session = new CdpSession(tabId, consoleBuffer, handlers);
+    const session = new CdpSession(tabId, consoleBuffer, networkBuffer, handlers);
     try {
       await session.initialize();
       return session;
@@ -175,6 +191,7 @@ export class CdpSession {
     await this.send('Page.enable');
     await this.send('Runtime.enable');
     await this.send('Log.enable');
+    await this.send('Network.enable');
     await this.send('DOM.enable');
     const info = await this.pageInfo();
     this.pageUrl = info.url;
@@ -274,6 +291,18 @@ export class CdpSession {
         this.consoleBuffer.add(consoleEntry('error', text, Date.now(), source));
         return;
       }
+      case 'Network.requestWillBeSent':
+        this.networkBuffer.requestStarted(params as NetworkRequestStartedEvent);
+        return;
+      case 'Network.responseReceived':
+        this.networkBuffer.responseReceived(params as NetworkResponseReceivedEvent);
+        return;
+      case 'Network.loadingFinished':
+        this.networkBuffer.requestFinished(params as NetworkFinishedEvent);
+        return;
+      case 'Network.loadingFailed':
+        this.networkBuffer.requestFailed(params as NetworkFailedEvent);
+        return;
       default:
         return;
     }
@@ -685,6 +714,14 @@ export class CdpSession {
 
   async consoleLogs(): Promise<{ entries: ConsoleEntry[]; total: number; dropped: number }> {
     return this.consoleBuffer.snapshot();
+  }
+
+  async networkRequests(options: NetworkSnapshotOptions = {}): Promise<{
+    entries: ReturnType<NetworkBuffer['snapshot']>['entries'];
+    total: number;
+    dropped: number;
+  }> {
+    return this.networkBuffer.snapshot(options);
   }
 
   isAlive(): boolean {

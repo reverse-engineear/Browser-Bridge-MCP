@@ -144,10 +144,13 @@ The default port is 8787. The server also reads `BROWSER_BRIDGE_PORT`, but the e
 | `press_key` | `key` | Send a key or chord such as `Enter` or `Control+A` |
 | `wait` | `seconds` | Pause for 0–30 seconds |
 | `get_console_logs` | — | Return buffered console entries, up to 1,000 |
+| `get_network_requests` | `limit?`, `urlContains?` | Recent request metadata: method, URL, status, type, duration and size |
 | `screenshot` | — | Return a PNG of the visible viewport |
 | `drag` | `fromRef`, `toRef` | Drag between two elements from the latest snapshot |
 
 Snapshots are capped at 4,000 nodes and 256 KB. Screenshots are capped at 8 MB. Tool errors come back as `CODE: message` without breaking the session.
+
+Network inspection is metadata only. The extension keeps the latest 500 requests for the connected tab; a call returns the latest 100 unless you pass `limit` (1–500) or a case-insensitive `urlContains` filter. Capture starts when the tab connects and continues across navigation. Request and response headers, cookies, authorization values, and bodies are never recorded. Full URLs are recorded, including their query strings, so treat the output as sensitive when a site puts tokens in a URL.
 
 ## Troubleshooting
 
@@ -186,7 +189,8 @@ Then open `chrome://extensions`, click **Reload** on Browser Bridge, reconnect t
 - One extension session is allowed at a time; a second gets `SESSION_BUSY`.
 - There is **no password or pairing code**. Any local program that can reach the port can act as an MCP client, and any extension in this Chrome profile can claim the session. Run only trusted local software.
 - The assistant acts in your real browser profile with your logged-in sessions. Every action is visible in the browser.
-- Page content, screenshots, and console output are processed in memory by the bridge. Your MCP client may send tool results to its model provider; that transfer is between you and the client.
+- Page content, screenshots, console output, and network metadata are processed in memory by the bridge. Your MCP client may send tool results to its model provider; that transfer is between you and the client.
+- Network results include full request URLs but never headers, cookies, or bodies. A URL can still carry a token in its query string, so review the output before sharing it.
 - Clearing the extension's storage removes its saved tab state.
 
 ## Development

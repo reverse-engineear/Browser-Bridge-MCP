@@ -9,6 +9,7 @@ export const HEARTBEAT_TIMEOUT_MS = 45_000;
 export const MAX_SNAPSHOT_NODES = 4_000;
 export const MAX_SNAPSHOT_BYTES = 256 * 1024;
 export const MAX_CONSOLE_ENTRIES = 1_000;
+export const MAX_NETWORK_ENTRIES = 500;
 export const MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024;
 export const MAX_WS_PAYLOAD = 32 * 1024 * 1024;
 
@@ -74,6 +75,7 @@ export const TOOL_NAMES = [
   'press_key',
   'wait',
   'get_console_logs',
+  'get_network_requests',
   'screenshot',
   'drag',
 ] as const;
@@ -115,6 +117,12 @@ export const ToolArgsSchemas = {
   press_key: z.object({ key: z.string().min(1).max(64) }).strict(),
   wait: z.object({ seconds: z.number().finite().min(0).max(30) }).strict(),
   get_console_logs: noArgs,
+  get_network_requests: z
+    .object({
+      limit: z.number().int().min(1).max(MAX_NETWORK_ENTRIES).optional(),
+      urlContains: z.string().trim().min(1).max(2_048).optional(),
+    })
+    .strict(),
   screenshot: noArgs,
   drag: z.object({ fromRef: RefSchema, toRef: RefSchema }).strict(),
 } as const;
@@ -281,6 +289,35 @@ export const ConsoleDataSchema = z
   })
   .strict();
 
+export const NetworkEntrySchema = z
+  .object({
+    url: z.string().min(1).max(4_096),
+    method: z.string().min(1).max(16),
+    resourceType: z.string().min(1).max(24),
+    status: z.number().int().min(0).max(999).nullable(),
+    statusText: z.string().max(256).optional(),
+    mimeType: z.string().max(256).optional(),
+    startedAt: z.number().finite(),
+    durationMs: z.number().finite().nonnegative().nullable(),
+    sizeBytes: z.number().int().nonnegative().nullable(),
+    failed: z.boolean(),
+    errorText: z.string().max(1_000).optional(),
+    redirects: z.number().int().positive().max(100).optional(),
+    fromCache: z.boolean().optional(),
+    fromServiceWorker: z.boolean().optional(),
+  })
+  .strict();
+
+export type NetworkEntry = z.infer<typeof NetworkEntrySchema>;
+
+export const NetworkDataSchema = z
+  .object({
+    entries: z.array(NetworkEntrySchema).max(MAX_NETWORK_ENTRIES),
+    total: z.number().int().nonnegative(),
+    dropped: z.number().int().nonnegative(),
+  })
+  .strict();
+
 export const ScreenshotDataSchema = z
   .object({
     base64: z.string().max(MAX_SCREENSHOT_BYTES * 2),
@@ -303,6 +340,7 @@ export const ToolResultDataSchemas = {
   press_key: OkDataSchema,
   wait: OkDataSchema,
   get_console_logs: ConsoleDataSchema,
+  get_network_requests: NetworkDataSchema,
   screenshot: ScreenshotDataSchema,
   drag: OkDataSchema,
 } as const;

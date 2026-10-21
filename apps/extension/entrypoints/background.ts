@@ -15,6 +15,7 @@ import {
 import { AutomationError, toAutomationError } from '../lib/errors.js';
 import { CdpSession } from '../lib/cdp.js';
 import { ConsoleBuffer } from '../lib/console-buffer.js';
+import { NetworkBuffer } from '../lib/network-buffer.js';
 import {
   clearSession,
   readSession,
@@ -30,6 +31,7 @@ const RECONNECT_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
 const ALARM_NAME = 'bridge-maintenance';
 
 const consoleBuffer = new ConsoleBuffer();
+const networkBuffer = new NetworkBuffer();
 let bufferTabId: number | null = null;
 let desiredSession: StoredSession | null = null;
 let socket: WebSocket | null = null;
@@ -290,10 +292,11 @@ async function ensureCdp(info: TabInfo): Promise<void> {
 
   if (bufferTabId !== info.id) {
     consoleBuffer.clear();
+    networkBuffer.clear();
     bufferTabId = info.id;
   }
 
-  cdp = await CdpSession.attach(info.id, consoleBuffer, {
+  cdp = await CdpSession.attach(info.id, consoleBuffer, networkBuffer, {
     onPageCommit: (tab) => {
       void onPageCommit(tab);
     },
@@ -553,6 +556,7 @@ async function disconnect(): Promise<void> {
   desiredSession = null;
   await clearSession();
   consoleBuffer.clear();
+  networkBuffer.clear();
   bufferTabId = null;
   reconnectAttempt = 0;
   setState({
@@ -611,6 +615,8 @@ async function runTool(name: ToolName, args: ToolArgs): Promise<unknown> {
       return { ok: true };
     case 'get_console_logs':
       return session.consoleLogs();
+    case 'get_network_requests':
+      return session.networkRequests(args as ToolArgsMap['get_network_requests']);
     case 'screenshot':
       return session.screenshot();
     case 'drag': {

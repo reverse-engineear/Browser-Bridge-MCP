@@ -547,17 +547,18 @@ async function run() {
 
   const expectedTools = [
     'navigate', 'go_back', 'go_forward', 'snapshot', 'click', 'type', 'hover',
-    'select_option', 'press_key', 'wait', 'get_console_logs', 'screenshot', 'drag',
+    'select_option', 'press_key', 'wait', 'get_console_logs', 'get_network_requests',
+    'screenshot', 'drag',
   ];
   for (const client of [state.mcp, state.mcpSecond]) {
     const tools = await client.request('tools/list', {}, 20_000);
     check(Array.isArray(tools.tools), `${client.label}: tools/list returned an array`);
-    check(tools.tools.length === 13, `${client.label}: 13 tools are advertised (got ${tools.tools.length})`);
+    check(tools.tools.length === 14, `${client.label}: 14 tools are advertised (got ${tools.tools.length})`);
     for (const name of expectedTools) {
       check(tools.tools.some((tool) => tool.name === name), `${client.label}: tool ${name} is advertised`);
     }
   }
-  line('[e2e] both clients advertise the same 13 tools');
+  line('[e2e] both clients advertise the same 14 tools');
 
   step('Retrying the tab connection against the running bridge');
   await state.cdp.send('Target.activateTarget', { targetId: fixtureTarget });
@@ -725,6 +726,22 @@ async function run() {
   checkMatch(result.text, /second action pressed/, 'the second page action was logged');
   checkMatch(result.text, /hello 1/, 'logs survived the navigation');
   line('[e2e] console buffer survived navigation');
+
+  const network = await poll(async () => {
+    const response = await state.mcp.tool('get_network_requests', { urlContains: 'second.html', limit: 20 });
+    if (response.isError) return response;
+    return /GET\s+200\s+Document/.test(response.text) ? response : null;
+  }, 'network metadata for the second-page document', 15_000);
+  check(network.text.includes(secondUrl), 'network metadata includes the document URL');
+  line(`[e2e] network metadata: ${network.text.split('\n').find((row) => row.includes('second.html'))}`);
+
+  result = await state.mcp.tool('get_network_requests', { limit: 5 });
+  const networkRows = result.text.split('\n').filter((row) => /^\d{2}:\d{2}:\d{2}\s/.test(row));
+  check(!result.isError, 'get_network_requests with a limit succeeds');
+  check(networkRows.length > 0 && networkRows.length <= 5, 'the limit caps the returned rows');
+
+  result = await state.mcp.tool('get_network_requests', { urlContains: 'no-such-request-12345' });
+  checkMatch(result.text, /No captured requests match/, 'an unmatched URL filter explains itself');
 
   result = await state.mcp.tool('navigate', { url: 'chrome://version' });
   check(result.isError, 'navigating to chrome:// is rejected');

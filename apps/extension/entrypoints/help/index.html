@@ -82,6 +82,7 @@
           <li>Drag between two elements with the pointer</li>
           <li>Wait for the page to settle</li>
           <li>Read recent console messages</li>
+          <li>Read recent network request metadata, without headers or bodies</li>
           <li>Take a screenshot of the visible page</li>
         </ul>
       </section>
@@ -101,9 +102,10 @@
       <section aria-labelledby="privacy-title">
         <h2 id="privacy-title">Where your data goes</h2>
         <p>
-          The shared bridge listens only on your own loopback address. Page content, screenshots and
-          console messages move between this extension, the bridge and the MCP clients on this computer.
-          The bridge itself does not send anything to another machine.
+          The shared bridge listens only on your own loopback address. Page content, screenshots,
+          console messages and network metadata move between this extension, the bridge and the MCP
+          clients on this computer. Network metadata keeps URLs, status and timing, but never headers,
+          cookies or bodies. The bridge itself does not send anything to another machine.
         </p>
         <p>
           The bridge accepts the extension from this Chrome profile and connections from local programs

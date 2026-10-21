@@ -4,6 +4,7 @@ import {
   ToolArgsSchemas,
   type ConsoleEntry,
   type ErrorCode,
+  type NetworkEntry,
   type ToolName,
   type ToolResultDataMap,
 } from '@browser-bridge/protocol';
@@ -91,6 +92,13 @@ const TOOL_COPY: ToolCopy[] = [
     annotations: { readOnlyHint: true, openWorldHint: true },
   },
   {
+    name: 'get_network_requests',
+    title: 'Read network requests',
+    description:
+      'Return metadata for requests the connected tab made since it connected: method, URL, resource type, status, duration, encoded size, cache or service-worker use, redirects and failures. Request and response headers, cookies and bodies are never recorded. Returns the latest 100 entries by default; pass limit or a case-insensitive urlContains filter to narrow the result. Full URLs can contain sensitive query values.',
+    annotations: { readOnlyHint: true, openWorldHint: true },
+  },
+  {
     name: 'screenshot',
     title: 'Screenshot',
     description: 'Capture a PNG of the visible part of the connected tab.',
@@ -134,6 +142,33 @@ function formatConsoleEntry(entry: ConsoleEntry): string {
   const level = entry.type.padEnd(5);
   const source = entry.source ? `  (${entry.source})` : '';
   return `${clockTime(entry.timestamp)}  ${level}  ${entry.text}${source}`;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1_024) return `${bytes} B`;
+  if (bytes < 1_024 * 1_024) return `${(bytes / 1_024).toFixed(1)} kB`;
+  return `${(bytes / (1_024 * 1_024)).toFixed(1)} MB`;
+}
+
+function formatDuration(durationMs: number | null): string {
+  if (durationMs === null) return '-';
+  return durationMs < 1_000 ? `${durationMs} ms` : `${(durationMs / 1_000).toFixed(1)} s`;
+}
+
+function formatNetworkEntry(entry: NetworkEntry): string {
+  const method = entry.method.padEnd(7);
+  const status = entry.failed ? 'FAILED' : entry.status === null ? 'pending' : String(entry.status);
+  const statusLabel = status.padEnd(7);
+  const type = entry.resourceType.padEnd(12);
+  const duration = formatDuration(entry.durationMs);
+  const size = entry.sizeBytes === null ? '-' : formatBytes(entry.sizeBytes);
+  const flags: string[] = [];
+  if (entry.redirects) flags.push(`${entry.redirects} redirect${entry.redirects === 1 ? '' : 's'}`);
+  if (entry.fromCache) flags.push('cache');
+  if (entry.fromServiceWorker) flags.push('service worker');
+  const extras = flags.length ? `  [${flags.join(', ')}]` : '';
+  const failure = entry.errorText ? `\n  error: ${entry.errorText}` : '';
+  return `${clockTime(entry.startedAt)}  ${method}  ${statusLabel}  ${type}  ${duration}  ${size}  ${entry.url}${extras}${failure}`;
 }
 
 export function formatToolResult<K extends ToolName>(
@@ -180,6 +215,21 @@ export function formatToolResult<K extends ToolName>(
       const lines = logs.entries.map(formatConsoleEntry);
       if (logs.dropped > 0) {
         lines.unshift(`[buffer] ${logs.dropped} older entries were dropped.`);
+      }
+      return text(lines.join('\n'));
+    }
+    case 'get_network_requests': {
+      const network = data as ToolResultDataMap['get_network_requests'];
+      if (network.entries.length === 0) {
+        return text(
+          network.total === 0
+            ? 'No network requests captured yet. Requests are recorded from the moment this tab connects.'
+            : 'No captured requests match that URL filter.',
+        );
+      }
+      const lines = network.entries.map(formatNetworkEntry);
+      if (network.dropped > 0) {
+        lines.unshift(`[buffer] ${network.dropped} older requests were dropped.`);
       }
       return text(lines.join('\n'));
     }

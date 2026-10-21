@@ -58,7 +58,9 @@ There is no password or pairing code. The security boundary is the OS user, the 
 
 ## Tools
 
-`navigate`, `go_back`, `go_forward`, `snapshot`, `click`, `type`, `hover`, `select_option`, `press_key`, `wait`, `get_console_logs`, `screenshot`, `drag`.
+`navigate`, `go_back`, `go_forward`, `snapshot`, `click`, `type`, `hover`, `select_option`, `press_key`, `wait`, `get_console_logs`, `get_network_requests`, `screenshot`, `drag`.
+
+`get_network_requests` returns metadata for up to 500 recent requests (`limit?`, `urlContains?`), with no headers, cookies, or bodies. Capture begins when the tab connects.
 
 Tool errors are returned to the client as `CODE: message`; they are never thrown across the WebSocket.
 

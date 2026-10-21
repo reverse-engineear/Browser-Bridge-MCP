@@ -81,6 +81,15 @@ describe('tool arguments', () => {
     expect(ToolArgsSchemas.drag.safeParse({ fromRef: 's1e2' }).success).toBe(false);
     expect(ToolArgsSchemas.drag.safeParse({ fromRef: 's1e2', toRef: 's1e3' }).success).toBe(true);
   });
+
+  it('bounds the network request query', () => {
+    expect(ToolArgsSchemas.get_network_requests.safeParse({}).success).toBe(true);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ limit: 20, urlContains: 'api' }).success).toBe(true);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ limit: 0 }).success).toBe(false);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ limit: 501 }).success).toBe(false);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ urlContains: '   ' }).success).toBe(false);
+    expect(ToolArgsSchemas.get_network_requests.safeParse({ headers: true }).success).toBe(false);
+  });
 });
 
 describe('result messages', () => {
@@ -139,5 +148,42 @@ describe('result messages', () => {
         bytes: 12,
       }).success,
     ).toBe(true);
+  });
+
+  it('checks network metadata shapes', () => {
+    const entry = {
+      url: 'https://example.com/',
+      method: 'GET',
+      resourceType: 'Document',
+      status: 200,
+      startedAt: 1_700_000_000_000,
+      durationMs: 42,
+      sizeBytes: 1_024,
+      failed: false,
+    };
+    expect(
+      ToolResultDataSchemas.get_network_requests.safeParse({ entries: [entry], total: 1, dropped: 0 }).success,
+    ).toBe(true);
+    expect(
+      ToolResultDataSchemas.get_network_requests.safeParse({
+        entries: [{ ...entry, status: null, durationMs: null, sizeBytes: null }],
+        total: 1,
+        dropped: 0,
+      }).success,
+    ).toBe(true);
+    expect(
+      ToolResultDataSchemas.get_network_requests.safeParse({
+        entries: [{ ...entry, authorization: 'secret' }],
+        total: 1,
+        dropped: 0,
+      }).success,
+    ).toBe(false);
+    expect(
+      ToolResultDataSchemas.get_network_requests.safeParse({
+        entries: [{ ...entry, sizeBytes: -1 }],
+        total: 1,
+        dropped: 0,
+      }).success,
+    ).toBe(false);
   });
 });
