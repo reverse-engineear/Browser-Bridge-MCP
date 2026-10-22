@@ -628,7 +628,21 @@ export class CdpSession {
     await this.runCursor('pulse', { x, y, kind });
   }
 
+  private async bringToFront(): Promise<void> {
+    try {
+      const tab = await chrome.tabs.get(this.tabId);
+      if (!tab.active) await chrome.tabs.update(this.tabId, { active: true });
+      if (tab.windowId !== undefined) {
+        await chrome.windows.update(tab.windowId, { focused: true });
+      }
+    } catch {
+      // The CDP call below still raises the tab when the window API refuses.
+    }
+    await this.send('Page.bringToFront');
+  }
+
   async click(ref: unknown): Promise<void> {
+    await this.bringToFront();
     const { x, y } = await this.pointFor(ref);
     await this.cursorTo(x, y, 'pointer');
     await this.dispatchMouse('mouseMoved', x, y, 'none', 0);
@@ -638,6 +652,7 @@ export class CdpSession {
   }
 
   async hover(ref: unknown): Promise<void> {
+    await this.bringToFront();
     const { x, y } = await this.pointFor(ref);
     await this.cursorTo(x, y, 'pointer');
     await this.dispatchMouse('mouseMoved', x, y, 'none', 0);
@@ -665,6 +680,7 @@ export class CdpSession {
   }
 
   async type(ref: unknown, text: string, submit: boolean): Promise<void> {
+    await this.bringToFront();
     const backendNodeId = this.backendNodeFor(ref);
     let focused = false;
     try {
@@ -708,10 +724,12 @@ export class CdpSession {
   }
 
   async pressKey(key: string): Promise<void> {
+    await this.bringToFront();
     await this.dispatchKeyStroke(parseKeyChord(key));
   }
 
   async selectOption(ref: unknown, values: string[]): Promise<string[]> {
+    await this.bringToFront();
     const backendNodeId = this.backendNodeFor(ref);
     let point: { x: number; y: number } | null = null;
     try {
@@ -779,6 +797,7 @@ export class CdpSession {
   }
 
   async drag(fromRef: unknown, toRef: unknown): Promise<void> {
+    await this.bringToFront();
     const from = await this.pointFor(fromRef);
     const to = await this.pointFor(toRef);
 

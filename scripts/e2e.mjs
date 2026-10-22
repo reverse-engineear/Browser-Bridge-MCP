@@ -783,6 +783,20 @@ async function run() {
   checkMatch(result.text, /Shadow action pressed\./, 'the shadow DOM button ran its handler');
   line('[e2e] shadow DOM click verified');
 
+  step('Input raises the connected tab when it is in the background');
+  const raiseRef = refFor(result.text, 'button', 'Shadow action');
+  await state.cdp.send('Target.activateTarget', { targetId: popupTarget });
+  await sleep(400);
+  const foregroundBefore = await state.cdp.evaluate(
+    'new Promise((resolve) => chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => resolve(tabs[0]?.url ?? null)))',
+    popupSession,
+  );
+  check(foregroundBefore !== indexUrl, 'another tab is active before the action');
+  result = await state.mcp.tool('click', { ref: raiseRef });
+  check(!result.isError, 'clicking with the connected tab in the background succeeds');
+  await activeFixture();
+  line('[e2e] the click raised the connected tab to the front');
+
   result = await state.mcp.tool('screenshot');
   check(!result.isError, 'screenshot succeeds');
   check(Boolean(result.image?.data), 'screenshot returns PNG data');

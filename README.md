@@ -101,6 +101,7 @@ You do not run a Node command every time. Register the server once; your MCP cli
 - The assistant can only act on that connected tab.
 - Refs expire on navigation. Ask for a fresh `snapshot` after a page changes.
 - Clicks, typing, hovers and drags show a smooth internal cursor on the page. It fades after a couple of seconds of inactivity. Switch **Agent cursor** off in the popup to hide it; the choice is remembered.
+- Input actions raise the connected tab and its Chrome window first. Reading tools (`snapshot`, `screenshot`, logs, network) do not move focus.
 
 ### Shared bridge lifecycle
 
