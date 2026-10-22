@@ -94,6 +94,50 @@ function toolDeadlineMs(name: ToolName, args: ToolArgsMap[ToolName]): number {
   return DEFAULT_DEADLINE_MS;
 }
 
+const BLANK_PAGE_HTML = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser Bridge</title>
+<link rel="icon" href="data:,">
+<style>
+:root { color-scheme: light dark; }
+html, body { height: 100%; margin: 0; }
+body {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: Canvas;
+  color: CanvasText;
+  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-align: center;
+}
+p { margin: 0; }
+p + p { margin-top: 6px; font-size: 13px; opacity: 0.72; }
+</style>
+</head>
+<body>
+<main>
+<p>Ready for Browser Bridge.</p>
+<p>Your MCP client can drive this tab. Navigate somewhere to get started.</p>
+</main>
+</body>
+</html>
+`;
+
+function serveBlankPage(response: import('node:http').ServerResponse): void {
+  response.writeHead(200, {
+    'content-type': 'text/html; charset=utf-8',
+    'cache-control': 'no-store',
+    'content-security-policy':
+      "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    'referrer-policy': 'no-referrer',
+    'x-content-type-options': 'nosniff',
+  });
+  response.end(BLANK_PAGE_HTML);
+}
+
 export class BridgeHub {
   private readonly port: number;
   private readonly serverVersion: string;
@@ -128,6 +172,11 @@ export class BridgeHub {
           'cache-control': 'no-store',
         });
         response.end(`${JSON.stringify(body)}\n`);
+        return;
+      }
+
+      if (request.method === 'GET' && url.pathname === '/blank') {
+        serveBlankPage(response);
         return;
       }
 

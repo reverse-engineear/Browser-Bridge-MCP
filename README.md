@@ -46,7 +46,7 @@ This repository is the portable source: everything needed is here, with no prebu
 
 4. **Start your MCP client.** The client launches the stdio server, and the first one starts the shared bridge automatically.
 
-5. **Connect a tab.** Open the page the assistant should use, click the Browser Bridge toolbar icon, and choose **Connect tab**. If the popup says the bridge did not answer, start an MCP client first and then choose **Try again**.
+5. **Connect a tab.** Open the page the assistant should use, click the Browser Bridge toolbar icon, and choose **Connect tab**. If a New Tab, `chrome://` or `edge://` page is in front, Browser Bridge replaces that tab with its own local blank page (`http://127.0.0.1:8787/blank`) so it can attach. If the popup says the bridge did not answer, start an MCP client first and then choose **Try again**.
 
 6. **Verify.** Ask the client for a `snapshot`. A tree of the page with element refs such as `s1e42` means the whole path is working.
 
@@ -226,7 +226,7 @@ Workspace layout:
 
 - Chrome only, one tab per session.
 - Several clients can interleave actions on the shared tab. There is no global call queue, so agents are instructed to take a fresh snapshot when the page state is uncertain.
-- `chrome://` pages, the Chrome Web Store, `file://` pages, PDFs in Chrome's viewer, and extension pages are refused.
+- Chrome internal pages (`chrome://`, New Tab, `edge://`, `about:`) cannot be debugged, so Connect switches that tab to the bridge's local blank page. The Chrome Web Store, `file://` pages, PDFs in Chrome's viewer, and extension pages are still refused.
 - A tab with DevTools open cannot also be attached by the extension; Chrome allows one debugger per tab.
 - Default port 8787. Changing it affects both the server and the compiled extension.
 - No store listing, localization, or automatic update channel yet. Update by rebuilding from source and reloading the unpacked extension.

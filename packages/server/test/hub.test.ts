@@ -154,6 +154,19 @@ describe('BridgeHub', () => {
     });
   });
 
+  it('serves the blank page that parks internal tabs', async () => {
+    const hub = await startHub();
+    const response = await fetch(`http://127.0.0.1:${hub.boundPort}/blank`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toMatch(/^text\/html/);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('content-security-policy')).toMatch(/default-src 'none'/);
+    const html = await response.text();
+    expect(html).toContain('<title>Browser Bridge</title>');
+    expect(html).toContain('Ready for Browser Bridge.');
+    expect(html).not.toMatch(/https?:\/\//);
+  });
+
   it('refuses an extension upgrade from a web origin', async () => {
     const hub = await startHub();
     const socket = connect(hub, 'https://evil.example');

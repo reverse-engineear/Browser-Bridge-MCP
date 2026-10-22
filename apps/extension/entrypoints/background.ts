@@ -27,6 +27,14 @@ import {
 import type { PopupCommand, PopupState, StateMessage } from '../lib/popup-messages.js';
 
 const BRIDGE_URL = `ws://127.0.0.1:${DEFAULT_PORT}/extension`;
+const BLANK_PAGE_URL = `http://127.0.0.1:${DEFAULT_PORT}/blank`;
+const INTERNAL_PAGE_SCHEMES = new Set([
+  'about:',
+  'chrome:',
+  'chrome-error:',
+  'chrome-search:',
+  'edge:',
+]);
 const HEARTBEAT_MS = 25_000;
 const SILENCE_LIMIT_MS = 55_000;
 const RECONNECT_DELAYS = [1_000, 2_000, 5_000, 10_000, 30_000];
@@ -329,6 +337,36 @@ async function resolveTab(tabId?: number): Promise<chrome.tabs.Tab> {
   return active;
 }
 
+function isInternalPageUrl(rawUrl: string): boolean {
+  try {
+    return INTERNAL_PAGE_SCHEMES.has(new URL(rawUrl).protocol);
+  } catch {
+    return false;
+  }
+}
+
+async function waitForTabUrl(
+  tabId: number,
+  expectedUrl: string,
+  timeoutMs = 5_000,
+): Promise<chrome.tabs.Tab> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    let tab: chrome.tabs.Tab;
+    try {
+      tab = await chrome.tabs.get(tabId);
+    } catch {
+      throw new AutomationError(
+        'TAB_CLOSED',
+        'The tab closed while Browser Bridge was opening its blank page.',
+      );
+    }
+    if (tab.url === expectedUrl && tab.status === 'complete') return tab;
+    if (Date.now() >= deadline) return tab;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
+
 async function handleConnectFailure(failure: AutomationError): Promise<void> {
   const current = cdp;
   cdp = null;
@@ -520,12 +558,26 @@ async function connectToTab(tabId?: number): Promise<{ ok: boolean; message?: st
   connecting = true;
   try {
     const tab = await resolveTab(tabId);
-    const info = tabInfoFromTab(tab);
+    let info = tabInfoFromTab(tab);
     if (info.id < 0) {
       throw new AutomationError('TAB_CLOSED', 'That tab is no longer available.');
     }
 
-    const guard = isAutomatableUrl(info.url);
+    let guard = isAutomatableUrl(info.url);
+    const needsBlankPage =
+      info.url === BLANK_PAGE_URL || (!guard.ok && isInternalPageUrl(info.url));
+    if (needsBlankPage) {
+      try {
+        await chrome.tabs.update(info.id, { url: BLANK_PAGE_URL });
+      } catch {
+        throw new AutomationError(
+          'NOT_AUTOMATABLE',
+          'Chrome would not let Browser Bridge open a blank page in this tab.',
+        );
+      }
+      info = tabInfoFromTab(await waitForTabUrl(info.id, BLANK_PAGE_URL));
+      guard = isAutomatableUrl(info.url);
+    }
     if (!guard.ok) {
       throw new AutomationError('NOT_AUTOMATABLE', guard.reason);
     }

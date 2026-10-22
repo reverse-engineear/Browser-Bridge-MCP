@@ -912,25 +912,101 @@ async function run() {
   check(result.isError, 'tool calls fail after the tab closes');
   checkMatch(result.text, /^NOT_CONNECTED:/, 'the failure is NOT_CONNECTED');
 
-  step('Retrying on a restricted page');
-  const restrictedTarget = (
+  step('Connecting from a browser-internal page');
+  const internalTarget = (
     await state.cdp.send('Target.createTarget', { url: 'chrome://version/' })
   ).targetId;
-  await state.cdp.send('Target.activateTarget', { targetId: restrictedTarget });
+  await state.cdp.send('Target.activateTarget', { targetId: internalTarget });
   await sleep(300);
   await state.cdp.evaluate('document.getElementById("retry").click()', popupSession);
-  const restrictedError = await poll(async () => {
-    const view = await popupView(popupSession);
-    if (view !== 'error') return null;
+  const internalView = await poll(
+    async () => ((await popupView(popupSession)) === 'connected' ? 'connected' : null),
+    'the popup to connect from the internal page',
+    20_000,
+  );
+  check(internalView === 'connected', 'Connect from a chrome:// tab succeeds');
+  const parked = await state.cdp.send('Target.getTargetInfo', { targetId: internalTarget });
+  check(
+    parked.targetInfo.url === `http://127.0.0.1:${BRIDGE_PORT}/blank`,
+    `the internal tab moved to the local blank page (got: ${parked.targetInfo.url})`,
+  );
+  const parkedState = await popupSnapshot(popupSession);
+  line(`[e2e] parked tab label: ${parkedState.tab}`);
+  checkMatch(parkedState.tab, /Browser Bridge/, 'the popup names the blank page');
+
+  result = await state.mcp.tool('snapshot');
+  check(!result.isError, 'snapshot works on the blank page');
+  checkMatch(result.text, /Ready for Browser Bridge/, 'the snapshot sees the blank page');
+  result = await state.mcp.tool('navigate', { url: indexUrl });
+  check(!result.isError, 'navigate works after the fallback connection');
+  checkMatch(result.text, /Bridge fixture/, 'the session can leave the blank page');
+  line('[e2e] internal-page fallback verified');
+
+  step('Keeping the restricted error for a PDF page');
+  await state.cdp.evaluate('document.getElementById("disconnect").click()', popupSession);
+  await poll(
+    async () => ((await popupView(popupSession)) === 'idle' ? 'idle' : null),
+    'the popup to disconnect before the PDF check',
+    10_000,
+  );
+  const pdfTarget = (
+    await state.cdp.send('Target.createTarget', {
+      url: `http://127.0.0.1:${fixturePort}/missing.pdf`,
+    })
+  ).targetId;
+  await state.cdp.send('Target.activateTarget', { targetId: pdfTarget });
+  await sleep(300);
+  await state.cdp.evaluate('document.getElementById("connect").click()', popupSession);
+  const pdfError = await poll(async () => {
+    if ((await popupView(popupSession)) !== 'error') return null;
     const text = await state.cdp.evaluate(
       'document.getElementById("error-text").textContent',
       popupSession,
     );
     return text || null;
-  }, 'the restricted-page error', 15_000);
-  checkMatch(restrictedError, /does not allow automation/i, 'the popup explains the restricted page');
-  line(`[e2e] restricted page message: ${restrictedError}`);
+  }, 'the PDF-page error', 15_000);
+  checkMatch(pdfError, /does not allow automation/i, 'the popup still explains the restricted PDF page');
+  line(`[e2e] PDF page message: ${pdfError}`);
   await capturePopup('S02-restricted.png');
+
+  step('Retrying the fallback after a cold start');
+  await state.mcp.release();
+  state.mcp = null;
+  stopBridge();
+  await poll(
+    async () => ((await bridgeHealth()) === null ? 'stopped' : null),
+    'the bridge to stop before the cold-start retry',
+    10_000,
+  );
+  const coldInternalTarget = (
+    await state.cdp.send('Target.createTarget', { url: 'chrome://newtab/' })
+  ).targetId;
+  await state.cdp.send('Target.activateTarget', { targetId: coldInternalTarget });
+  await sleep(300);
+  await state.cdp.evaluate('document.getElementById("retry").click()', popupSession);
+  const coldError = await poll(async () => {
+    if ((await popupView(popupSession)) !== 'error') return null;
+    const text = await state.cdp.evaluate(
+      'document.getElementById("error-text").textContent',
+      popupSession,
+    );
+    return /didn't answer/.test(text) ? text : null;
+  }, 'the server-down error after parking the internal tab', 20_000);
+  line(`[e2e] cold-start error: ${coldError}`);
+
+  state.mcp = await McpClient.start({ label: 'four' });
+  await poll(async () => ((await bridgeHealth()) !== null ? 'up' : null), 'the bridge to return', 15_000);
+  await state.cdp.evaluate('document.getElementById("retry").click()', popupSession);
+  const recoveredView = await poll(
+    async () => ((await popupView(popupSession)) === 'connected' ? 'connected' : null),
+    'the popup to recover on the parked page',
+    20_000,
+  );
+  check(recoveredView === 'connected', 'Retry reloads the blank page and attaches');
+  result = await state.mcp.tool('snapshot');
+  check(!result.isError, 'snapshot works after the cold-start retry');
+  checkMatch(result.text, /Ready for Browser Bridge/, 'the recovered tab shows the blank page');
+  line('[e2e] cold-start fallback recovery verified');
 
   if (state.mcp) await state.mcp.release();
   state.mcp = null;
