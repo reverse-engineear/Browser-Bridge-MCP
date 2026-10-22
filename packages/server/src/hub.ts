@@ -102,31 +102,173 @@ const BLANK_PAGE_HTML = `<!doctype html>
 <title>Browser Bridge</title>
 <link rel="icon" href="data:,">
 <style>
-:root { color-scheme: light dark; }
-html, body { height: 100%; margin: 0; }
+:root {
+  color-scheme: light dark;
+  --bg: #F5F5F7;
+  --surface: #FFFFFF;
+  --border: #E4E4E7;
+  --text: #18181B;
+  --muted: #5D5D66;
+  --accent: #4F46E5;
+  --accent-soft: #EEF2FF;
+  --accent-soft-text: #3730A3;
+  --dot: rgba(24, 24, 27, 0.09);
+  --glow-a: rgba(79, 70, 229, 0.14);
+  --glow-b: rgba(129, 140, 248, 0.10);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 28px 56px -32px rgba(16, 24, 40, 0.30);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F0F11;
+    --surface: #18181B;
+    --border: #2E2E33;
+    --text: #F4F4F5;
+    --muted: #A6A6AE;
+    --accent: #A5B4FC;
+    --accent-soft: #1E1B4B;
+    --accent-soft-text: #C7D2FE;
+    --dot: rgba(244, 244, 245, 0.08);
+    --glow-a: rgba(79, 70, 229, 0.24);
+    --glow-b: rgba(165, 180, 252, 0.08);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.40), 0 28px 56px -32px rgba(0, 0, 0, 0.70);
+  }
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { min-height: 100%; }
 body {
+  margin: 0;
+  min-height: 100svh;
   display: grid;
   place-items: center;
   padding: 24px;
-  background: Canvas;
-  color: CanvasText;
-  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
-  text-align: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
-p { margin: 0; }
-p + p { margin-top: 6px; font-size: 13px; opacity: 0.72; }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, #000 25%, transparent 72%);
+  pointer-events: none;
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20vmax;
+  background:
+    radial-gradient(closest-side at 32% 26%, var(--glow-a), transparent 70%),
+    radial-gradient(closest-side at 74% 78%, var(--glow-b), transparent 70%);
+  pointer-events: none;
+}
+main {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  padding: clamp(28px, 7vw, 44px);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  animation: rise 500ms var(--ease) both;
+}
+.mark {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 26px;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 0 0 6px var(--accent-soft), 0 0 0 7px var(--border);
+}
+.mark svg { width: 26px; height: 26px; }
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-soft-text);
+}
+h1 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 5vw, 26px);
+  line-height: 1.25;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.lede {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 30px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.meta span { display: inline-flex; align-items: center; gap: 8px; }
+.dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.address {
+  font-family: ui-monospace, SFMono-Regular, "Cascadia Mono", Consolas, monospace;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  main { animation: none; }
+}
 </style>
 </head>
 <body>
 <main>
-<p>Ready for Browser Bridge.</p>
-<p>Your MCP client can drive this tab. Navigate somewhere to get started.</p>
+  <div class="mark" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22v-5"/>
+      <path d="M9 8V2"/>
+      <path d="M15 8V2"/>
+      <path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/>
+    </svg>
+  </div>
+  <p class="eyebrow">Browser Bridge</p>
+  <h1>Ready for Browser Bridge.</h1>
+  <p class="lede">Your assistant can now drive this tab. Ask it to open a page to get started.</p>
+  <p class="meta"><span><span class="dot" aria-hidden="true"></span>Served locally</span><span class="address">{{ADDRESS}}</span></p>
 </main>
 </body>
 </html>
 `;
 
-function serveBlankPage(response: import('node:http').ServerResponse): void {
+function serveBlankPage(response: import('node:http').ServerResponse, port: number): void {
   response.writeHead(200, {
     'content-type': 'text/html; charset=utf-8',
     'cache-control': 'no-store',
@@ -135,7 +277,7 @@ function serveBlankPage(response: import('node:http').ServerResponse): void {
     'referrer-policy': 'no-referrer',
     'x-content-type-options': 'nosniff',
   });
-  response.end(BLANK_PAGE_HTML);
+  response.end(BLANK_PAGE_HTML.replace('{{ADDRESS}}', `127.0.0.1:${port}`));
 }
 
 export class BridgeHub {
@@ -176,7 +318,7 @@ export class BridgeHub {
       }
 
       if (request.method === 'GET' && url.pathname === '/blank') {
-        serveBlankPage(response);
+        serveBlankPage(response, this.boundPort ?? this.port);
         return;
       }
 

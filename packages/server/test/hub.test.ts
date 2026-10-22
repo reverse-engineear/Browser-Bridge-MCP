@@ -163,7 +163,11 @@ describe('BridgeHub', () => {
     expect(response.headers.get('content-security-policy')).toMatch(/default-src 'none'/);
     const html = await response.text();
     expect(html).toContain('<title>Browser Bridge</title>');
-    expect(html).toContain('Ready for Browser Bridge.');
+    expect(html).toContain('<h1>Ready for Browser Bridge.</h1>');
+    expect(html).toContain('Served locally');
+    expect(html).toContain(`127.0.0.1:${hub.boundPort}`);
+    expect(html).toMatch(/prefers-color-scheme: dark/);
+    expect(html).not.toContain('<script');
     expect(html).not.toMatch(/https?:\/\//);
   });
 
