@@ -161,6 +161,7 @@ describe('BridgeHub', () => {
     expect(response.headers.get('content-type')).toMatch(/^text\/html/);
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(response.headers.get('content-security-policy')).toMatch(/default-src 'none'/);
+    expect(response.headers.get('content-security-policy')).toMatch(/connect-src 'self'/);
     const html = await response.text();
     expect(html).toContain('<title>Browser Bridge</title>');
     expect(html).toContain('<h1>Ready for Browser Bridge.</h1>');
